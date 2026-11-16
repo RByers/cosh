@@ -148,11 +148,11 @@ weekday hours against 11 working hours.
 - **Repository volume (goal 4).** `all.json` is 16 KB.
 - **Tokens (goal 5).** None.
 - **Data flow (goal 6).** The windows and working hours live in the shared
-  timeline store, so Review Load can use them too; one publish step.
+  timeline store, so Review Load uses them too (in the reviewer's hours,
+  since 2026-11-16: `docs/review-load.md`, "Working hours"); one publish step.
 
 ## Not done yet
 
-- Review Load's wait charts still count weekday hours (UTC); they could
-  switch to working hours.
+- Review Balance's review-time figures still count weekday hours (UTC).
 - A view of one directory over time, or by hour of the day (when its
   authors send changes against when its owners work).

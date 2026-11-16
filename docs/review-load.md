@@ -99,7 +99,7 @@ quarters, shaded against everyone's there).
   intervals merged), from being added to leaving it: about five in six
   end with the reviewer's own vote or comment, the rest because the owner
   or someone else took them out. **Reviewer response time** is the
-  weekday hours of turns that ended before the CL closed. A turn still open when
+  working hours (below) of turns that ended before the CL closed. A turn still open when
   the CL landed (within a minute of its close) is left out: the CL didn't
   wait on that reviewer. Per turn rather than per CL, so a directory whose
   changes go back and forth more (more careful reviewers, more complex
@@ -111,6 +111,25 @@ quarters, shaded against everyone's there).
   5% of turns but 15% of the hours (mean 52 h, against 15 h for turns a
   reviewer ended by answering). `mojo/public/`, for one, had 63% of its
   hours in them.
+- **Working hours** (since 2026-11-16): both wait charts and the
+  directory table count only the hours inside the **reviewer's** working
+  window: the 8 hours of the day holding most of their Gerrit activity,
+  Monday to Friday where it starts at 09:00, fitted per quarter
+  (`work_windows`; `docs/review-timezones.md`, "Working hours"). A turn's
+  are `cl_turns.work_h`; the time to first answer is computed here from
+  the reviewer's window in the quarter they were asked (else their latest
+  earlier one, else their earliest). The page measures how quickly
+  reviewers answer, so a night in the reviewer's timezone isn't counted
+  against them; what the overlap costs the author is Review Timezones'
+  subject. Until then they were weekday hours (Saturdays and Sundays UTC
+  left out). On 2026Q3: the median turn 2.78 → 1.14 h, the 90th
+  percentile 35 → 11 h, the median first answer 3.91 → 1.47 h; every
+  turn and answer still counts (all have a window). Directories' 90th
+  percentiles over the four quarters keep their order (Spearman rank
+  correlation 0.98 over 752 directories); their medians move more (0.86), since a turn
+  spanning a night or a weekend now counts near zero. The per-person
+  file's attention-set hours (`years`, third figure) are still weekday
+  hours; the page doesn't show them.
 - **Directory**: of the lines changed, as the directory is named today
   (`commits.current_paths`). A commit counts in each directory by its lines
   there; a CL's turns count in each by the same share, as weights of the
@@ -266,7 +285,7 @@ R2 bucket (`docs/r2.md`; until 2026-11-14 they were committed next to
 | File | Holds |
 |---|---|
 | `all.json` | per quarter: commits, reviewed commits and lines, reviewers, `reviewers_per_commit` (the reviewed commits' own lines, their reviewers summed, those with two or more, and `every`: the lines reviewed had every reviewer read every file), `reviewer_lines` (lines reviewed per reviewer), `reply` (the reviewer's turn to first answer) and `turns` (reviewer response time), each a spread: 10th, 25th, 50th, 75th, 90th percentile, mean and count; the table's directories at every level with five quarters of lines, four of the 50th/75th/90th percentile and turns, and the percentiles over the four; `others`: the same for each directory's "Other"; with OWNERS, each directory's seven figures (reviewers, how many did half, owners listed, owners who reviewed, lines reviewed by an owner, non-committers' lines, those two owners approved) and `owners`: the same for everything and the day of the OWNERS files |
-| `<name>.json` | one reviewer, in one file (version 2), fetched in one request: `years`, by year, `{"q": {quarter number: [commits reviewed, lines reviewed, attention weekday hours, CLs counted in them, asked-to-answer hours (summed), answers]}}`; `dirs`, by quarter (the table's four), their 3-level directories `[directory, lines]` (until 2026-11-15 also attention hours and CLs); `turns`, by quarter, `[median hours, turns]`; and `rows`, by table row (`d:<dir>`, `o:<dir>` for its "Other", `o:` for what no listed directory covers), their turns over the four quarters `[50th, 75th, 90th percentile, turns]` |
+| `<name>.json` | one reviewer, in one file (version 2), fetched in one request: `years`, by year, `{"q": {quarter number: [commits reviewed, lines reviewed, attention weekday hours, CLs counted in them, asked-to-answer hours (summed; the reviewer's working hours since 2026-11-16), answers]}}`; `dirs`, by quarter (the table's four), their 3-level directories `[directory, lines]` (until 2026-11-15 also attention hours and CLs); `turns`, by quarter, `[median working hours, turns]`; and `rows`, by table row (`d:<dir>`, `o:<dir>` for its "Other", `o:` for what no listed directory covers), their turns over the four quarters `[50th, 75th, 90th percentile, turns]` |
 
 `<name>` is the address as typed, lower case, as the Feedback Index names its files
 (`cosh.review_feedback.file_name`). The bucket can't be listed, so a

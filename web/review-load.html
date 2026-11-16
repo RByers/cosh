@@ -121,14 +121,17 @@
         <a class="card-anchor" href="#latency" aria-label="Link to this section" title="Link to this section">#</a>
         <h2 id="latency-title">How long changes wait for review</h2>
         <p class="rf-def">
-          All times here leave out Saturdays and Sundays (UTC), so a change sent on Friday evening and reviewed on
-          Monday morning waited hours, not days. They are elapsed time, not time spent reviewing. Both charts
+          All times here are the <strong>reviewer's working hours</strong>: the 8 hours of the day in which they
+          are most active in Gerrit, Monday to Friday in their own timezone, fitted once a quarter (as on
+          <a href="review-timezones.html">Review Timezones</a>). A change sent at the end of the reviewer's day
+          and answered first thing the next waited no time at all for them, wherever the author is. They are
+          elapsed time in those hours, not time spent reviewing. Both charts
           start in <span id="rl-att-from-2"></span>, the first whole quarter with Gerrit's attention set.
         </p>
         <h3>Reviewer's turn to first answer</h3>
         <ul id="rl-reply-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
         <div class="chart rf-half-chart">
-          <canvas id="rl-reply" role="img" aria-label="Median weekday hours from a reviewer entering a change's attention set to their first answer per quarter, with the middle half and the 10th to 90th percentile shaded."></canvas>
+          <canvas id="rl-reply" role="img" aria-label="Median working hours from a reviewer entering a change's attention set to their first answer per quarter, with the middle half and the 10th to 90th percentile shaded."></canvas>
         </div>
         <p id="rl-reply-note" class="note"></p>
         <template data-msg="reply-note">
@@ -141,12 +144,12 @@
           set to your first answer.</span>
         </template>
         <template data-msg="legend-you-mean">Your mean</template>
-        <template data-msg="axis-hours">weekday hours</template>
+        <template data-msg="axis-hours">reviewer's working hours</template>
 
         <h3>Reviewer response time</h3>
         <ul id="rl-turns-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
         <div class="chart rf-half-chart">
-          <canvas id="rl-turns" role="img" aria-label="Median weekday hours of a reviewer's turn in a change's attention set per quarter, with the middle half and the 10th to 90th percentile shaded."></canvas>
+          <canvas id="rl-turns" role="img" aria-label="Median working hours of a reviewer's turn in a change's attention set per quarter, with the middle half and the 10th to 90th percentile shaded."></canvas>
         </div>
         <p id="rl-turns-note" class="note"></p>
         <template data-msg="turns-note">
@@ -187,7 +190,7 @@
               <tr><th scope="col" rowspan="2">Directory</th>
                 <th scope="col" rowspan="2" class="num" title="Changed lines of the commits there, counted once per reviewer, over the four quarters">Lines reviewed</th>
                 <th scope="colgroup" colspan="4" class="rl-group" title="Lines reviewed in the quarter against the quarter before">Change in lines reviewed</th>
-                <th scope="colgroup" colspan="4" class="rl-group" title="Weekday hours of a reviewer's turn there (one stay in a change's attention set), at the percentile chosen above">Reviewer response time (hours)</th>
+                <th scope="colgroup" colspan="4" class="rl-group" title="The reviewer's working hours of a turn there (one stay in a change's attention set), at the percentile chosen above">Reviewer response time (hours)</th>
                 <th scope="colgroup" colspan="2" class="rf-you-col rf-you-start">Yours</th></tr>
               <tr id="rl-dirs-quarters"></tr>
             </thead>
@@ -200,7 +203,7 @@
         <template data-msg="col-you-lines">Lines</template>
         <template data-msg="col-you-hours">Hours</template>
         <template data-msg="title-you-lines">Lines you reviewed there over the four quarters</template>
-        <template data-msg="title-you-hours">Weekday hours of your turns there over the four quarters, at the percentile chosen above</template>
+        <template data-msg="title-you-hours">Your working hours of your turns there over the four quarters, at the percentile chosen above</template>
         <template data-msg="pct-p50">median</template>
         <template data-msg="pct-p75">75th percentile</template>
         <template data-msg="pct-p90">90th percentile</template>
@@ -210,8 +213,8 @@
           directory of the lines changed (as the directories are named today; a commit that spans several
           counts in each by its lines). The change columns compare each quarter's lines reviewed with the quarter
           before. Lines reviewed are shaded on a log scale, from white for the fewest to dark blue for the
-          most. The response times are the <slot name="pct"></slot> of reviewers' turns there, in weekday
-          hours, as in the chart above: a change's turns count in each directory by its share of lines there.
+          most. The response times are the <slot name="pct"></slot> of reviewers' turns there, in their
+          working hours, as in the chart above: a change's turns count in each directory by its share of lines there.
           They are shaded against all of Chromium's <slot name="pct"></slot> in the same quarter: red where
           reviewers' turns last longer (twice as long or more is the deepest red), green where they are
           shorter. Long waits where the lines reviewed are

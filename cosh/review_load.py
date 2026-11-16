@@ -36,6 +36,7 @@ Feedback Index's: addresses merge only on evidence, never by domain.
 """
 
 import argparse
+import bisect
 import functools
 import json
 import os
@@ -50,7 +51,7 @@ from . import commits as C
 from . import data_span, owners, r2, review_timeline, store
 from .people import exact_identities, is_bot_email
 from .review_feedback import file_name
-from .review_timeline import weekday_seconds
+from . import work_hours
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "web", "public", "review-load")
@@ -65,6 +66,23 @@ WEEK = 7 * 86400
 def quarter(t):
     d = datetime.fromtimestamp(t, timezone.utc)
     return f"{d.year}Q{(d.month - 1) // 3 + 1}"
+
+
+def reviewer_windows(tdb):
+    """A function (account, time) -> the start hour (UTC) of the account's
+    working window (work_windows, cosh/work_hours.py) in that time's quarter;
+    failing that their latest earlier one, or their earliest; None without any."""
+    by = defaultdict(list)
+    for a, q, s in tdb.execute("SELECT account_id, quarter, start_h FROM work_windows ORDER BY account_id, quarter"):
+        by[a].append((q, s))
+
+    def at(account, t):
+        ws = by.get(account)
+        if not ws:
+            return None
+        i = bisect.bisect_right(ws, (quarter(t), 24))
+        return ws[i - 1][1] if i else ws[0][1]
+    return at
 
 
 def quarter_start(q):
@@ -447,6 +465,7 @@ def compute(gdb, ddb, tdb, owners_at=None):
     merged = {n for (n,) in ddb.execute(
         "SELECT change_number FROM changes WHERE is_bot_owned = 0 AND status = 'MERGED'") if n in by_cl}
     reply_h = [[] for _ in qs]
+    window_at = reviewer_windows(tdb)
     for n, acct, asked, responded, wd in tdb.execute(
             "SELECT change_number, account_id, asked_at, responded_at, attention_weekday_h FROM cl_reviewers"):
         c = by_cl.get(n)
@@ -457,8 +476,9 @@ def compute(gdb, ddb, tdb, owners_at=None):
         if asked is not None and q >= ATTENTION_FROM:
             x[2] += wd
             x[3] += 1
-            if responded is not None and responded >= asked:
-                h = weekday_seconds(asked, responded) / 3600
+            w = window_at(acct, asked)
+            if responded is not None and responded >= asked and w is not None:
+                h = work_hours.work_seconds(asked, responded, w) / 3600
                 reply_h[qi[q]].append(h)
                 x[4] += h
                 x[5] += 1
@@ -469,7 +489,7 @@ def compute(gdb, ddb, tdb, owners_at=None):
     ntq = len(table_qs) - 1
     row_t = defaultdict(lambda: [[] for _ in range(ntq)])                 # row -> table quarter -> [(hours, weight)]
     prow_t = defaultdict(lambda: defaultdict(list))                       # person -> row -> [(hours, weight)]
-    for n, acct, h in tdb.execute("SELECT change_number, account_id, weekday_h FROM cl_turns"):
+    for n, acct, h in tdb.execute("SELECT change_number, account_id, work_h FROM cl_turns WHERE work_h IS NOT NULL"):
         c = by_cl.get(n)
         if c is None or n not in merged or not emails.get(acct) or c["q"] < ATTENTION_FROM:
             continue
@@ -509,7 +529,8 @@ def compute(gdb, ddb, tdb, owners_at=None):
         reviewers_per_commit=dict(lines=commit_lines, reviews=reviews, multi=multi, every=every),
         # Lines reviewed per reviewer: the spread over the people who reviewed anything in the quarter.
         reviewer_lines=spread([[byq[q][1] for byq in per.values() if q in byq and byq[q][0]] for q in qs]),
-        # A reviewer's turn to first answer and every turn's hours: their spread per quarter.
+        # A reviewer's turn to first answer and every turn's hours, in the reviewer's working hours
+        # (work_windows): their spread per quarter.
         reply=spread(reply_h, [q >= ATTENTION_FROM for q in qs]),
         # Reviewers' turns: percentiles, mean and count per quarter.
         turns=spread(turn_h, [q >= ATTENTION_FROM for q in qs]),
@@ -530,7 +551,7 @@ def compute(gdb, ddb, tdb, owners_at=None):
         for q, x in byq.items():
             if x[0] or x[3]:
                 # [commits reviewed, lines reviewed, attention weekday hours, CLs counted in them,
-                #  asked-to-answer hours, answers]
+                #  asked-to-answer hours (the reviewer's working hours), answers]
                 years[q[:4]][q[5]] = [x[0], x[1], r1(x[2]), x[3], r1(x[4]), x[5]]
         if years:
             people[p] = years

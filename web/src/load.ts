@@ -6,7 +6,7 @@
 
 import type { DataSpan } from './data-span.ts';
 
-/** A reviewer turn's weekday hours at the 50th, 75th and 90th percentile. */
+/** A reviewer turn's working hours (the reviewer's) at the 50th, 75th and 90th percentile. */
 export type Pcts = [number, number, number];
 /** A directory of the table: [path, lines reviewed in each of `table_quarters`, the percentiles of
  * reviewers' turns there (stays in the attention set that ended before the change closed) in each of
@@ -46,7 +46,7 @@ export interface All {
   reviewers_per_commit: { lines: number[]; reviews: number[]; multi: number[]; every: number[] };
   /** Lines reviewed per reviewer, over the people who reviewed anything in the quarter. */
   reviewer_lines: Spread;
-  /** A reviewer's wait: entering the attention set to their first answer, in weekday hours. */
+  /** A reviewer's wait: entering the attention set to their first answer, in the reviewer's working hours. */
   reply: Spread;
   /** Reviewers' turns that ended before their change closed. */
   turns: Spread;
@@ -59,7 +59,7 @@ export interface All {
 }
 
 /** A reviewer's quarter: [commits reviewed, lines reviewed, weekday hours in the attention set, changes in it,
- * weekday hours from asked to first answer (summed), answers]. */
+ * the reviewer's working hours from asked to first answer (summed), answers]. */
 export type PersonQuarter = [number, number, number, number, number, number];
 /** A reviewer's year: its quarters by number ("1".."4"). */
 export interface PersonYear {
@@ -75,7 +75,7 @@ export interface PersonFile {
   v: 2;
   years: Record<string, PersonYear>;
   dirs: Record<string, PersonDir[]>;
-  /** By quarter ("2026Q3"): [median weekday hours of their turns, turns]. */
+  /** By quarter ("2026Q3"): [median working hours of their turns, turns]. */
   turns?: Record<string, [number, number]>;
   /** By table row key ("d:a/b/", "o:a/", "o:"). */
   rows?: Record<string, PersonRow>;
@@ -86,7 +86,7 @@ export interface Person {
   quarters: Map<string, PersonQuarter>;
   /** By table quarter, the files that exist. */
   dirs: Map<string, PersonDir[]>;
-  /** By quarter: [median weekday hours of their turns, turns]. */
+  /** By quarter: [median working hours of their turns, turns]. */
   turns: Map<string, [number, number]>;
   /** By table row key. */
   rows: Map<string, PersonRow>;
@@ -312,7 +312,7 @@ export function dirRows(roots: DirNode[], expanded: ReadonlySet<string>, byYou: 
 export const PCT_KEYS = ['p50', 'p75', 'p90'] as const;
 export type PctKey = (typeof PCT_KEYS)[number];
 
-/** A row's weekday hours per turn at percentile `k`, per quarter (null under `minTurns` turns). */
+/** A row's working hours per turn at percentile `k`, per quarter (null under `minTurns` turns). */
 export const pctHours = (n: DirStats, k: PctKey, minTurns = 5) =>
   n.pcts.map((v, i) => (v && n.turns[i] >= minTurns ? v[PCT_KEYS.indexOf(k)] : null));
 

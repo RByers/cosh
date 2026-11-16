@@ -1352,7 +1352,7 @@
       "rebuildable": true,
       "size": "2.8 MB gzipped in 5,116 files: one per reviewer",
       "size_as_of": "2026-11-14",
-      "files": "<name>.json.gz, one per reviewer: years, by year, the reviewer's quarters (commits and lines reviewed, weekday attention-set hours and the CLs counted, hours from asked to first answer), dirs, by the table's four quarters, their lines per 3-level directory, turns, by quarter, their turns' median and count, and rows, their turns' percentiles per table row; <name> is the Feedback Index's (the normalised e-mail address).",
+      "files": "<name>.json.gz, one per reviewer: years, by year, the reviewer's quarters (commits and lines reviewed, weekday attention-set hours and the CLs counted, the reviewer's working hours from asked to first answer), dirs, by the table's four quarters, their lines per 3-level directory, turns, by quarter, their turns' median and count, and rows, their turns' percentiles per table row; <name> is the Feedback Index's (the normalised e-mail address).",
       "purpose": "The local copy of what Review Load fetches from R2 about one reviewer, so the upload sends only files that changed; served under r2/ when the page runs on localhost.",
       "notes": "Was committed under web/public/review-load/ until 2026-11-14, then in R2 as one file per year and per table quarter, named by a hash, until the same day. A reviewer's file changes only when a quarter completes.",
       "withheld": "File names are people's addresses: reachable only by typing one (ground rule 5), so no samples are listed."

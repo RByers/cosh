@@ -96,9 +96,13 @@ class ComputeTest(unittest.TestCase):
             (102, 9, fri, fri + 60, 1.0, 1.0),                             # no address: not counted
             (106, 7, fri, fri + 60, 5.0, 5.0),                             # a mechanical commit's CL: not counted
         ])
-        t.executemany("INSERT INTO cl_turns VALUES (?,?,?,?,?,NULL,NULL)", [
+        # Turns' working hours (the reviewer's) count; their weekday hours (99) don't.
+        t.executemany("INSERT INTO cl_turns VALUES (?,?,?,?,99.0,?,NULL)", [
             (102, 7, fri + 3600, fri + 86400, 20.0), (102, 7, fri + 2 * 86400, fri + 3 * 86400, 4.0),
             (102, 9, fri, fri + 60, 1.0), (106, 7, fri, fri + 60, 5.0)])
+        # Reviewer 7 works 13:00 .. 21:00 UTC (09:00 at UTC-4), fitted in Q2 only: Q3 falls back to it.
+        # two@x.org (8) has no window.
+        t.execute("INSERT INTO work_windows VALUES (7, '2026Q2', 13, 'quarter', 50)")
 
     def tearDown(self):
         L.FIRST_QUARTER, L.ATTENTION_FROM, L.MIN_DIR_LINES = self.old
@@ -116,9 +120,10 @@ class ComputeTest(unittest.TestCase):
         # Without OWNERS, every reviewer is taken to have read every file.
         self.assertEqual(data["reviewers_per_commit"], dict(lines=[40, 80], reviews=[1, 2], multi=[0, 1], every=[40, 160]))
         self.assertNotIn("first", data)
-        # Asked Friday 13:00, answered Monday 12:00: 23 weekday hours. Nothing before the attention set.
-        self.assertEqual(data["reply"], dict(p10=[None, 23.0], p25=[None, 23.0], p50=[None, 23.0], p75=[None, 23.0],
-                                             p90=[None, 23.0], mean=[None, 23.0], n=[0, 1]))
+        # Asked Friday 13:00, answered Monday 12:00: 23 weekday hours, but 8 of the reviewer's working
+        # hours (all of Friday's, none of Monday's). Nothing before the attention set.
+        self.assertEqual(data["reply"], dict(p10=[None, 8.0], p25=[None, 8.0], p50=[None, 8.0], p75=[None, 8.0],
+                                             p90=[None, 8.0], mean=[None, 8.0], n=[0, 1]))
         # Lines per reviewer: rev's 40 in Q2; rev's and two@x.org's 80 each in Q3.
         q = [40, 80]
         self.assertEqual(data["reviewer_lines"], dict(p10=q, p25=q, p50=q, p75=q, p90=q, mean=q, n=[1, 2]))
@@ -136,7 +141,7 @@ class ComputeTest(unittest.TestCase):
         # rev@google.com (the Q2 footer) and account 7 are one identity, by the votes; not by domain.
         rev = "rev@chromium.org"
         self.assertEqual(aliases, {"rev@google.com": rev})
-        self.assertEqual(people[rev], {"2026": {"2": [1, 40, 0.0, 0, 0.0, 0], "3": [1, 80, 30.0, 1, 23.0, 1]}})
+        self.assertEqual(people[rev], {"2026": {"2": [1, 40, 0.0, 0, 0.0, 0], "3": [1, 80, 30.0, 1, 8.0, 1]}})
         self.assertEqual(people["two@x.org"], {"2026": {"3": [1, 80, 10.0, 1, 0.0, 0]}})
         # Directories only for the table's quarters after the first.
         self.assertEqual(pdirs, {"2026Q3": {rev: [["a/b/", 20], ["a/b/c/", 60]],
@@ -221,7 +226,7 @@ class ComputeTest(unittest.TestCase):
             # The other address finds them through a stub.
             self.assertEqual(gz("rev@google.com.json.gz"), {"see": k})
             self.assertEqual(gz(f"{k}.json.gz"), {
-                "v": 2, "years": {"2026": {"q": {"2": [1, 40, 0.0, 0, 0.0, 0], "3": [1, 80, 30.0, 1, 23.0, 1]}}},
+                "v": 2, "years": {"2026": {"q": {"2": [1, 40, 0.0, 0, 0.0, 0], "3": [1, 80, 30.0, 1, 8.0, 1]}}},
                 "turns": {"2026Q3": [12.0, 2]},
                 "dirs": {"2026Q3": [["a/b/", 20], ["a/b/c/", 60]]},
                 "rows": {"d:a/": [4.0, 20.0, 20.0, 2.0], "d:a/b/": [4.0, 20.0, 20.0, 2.0],

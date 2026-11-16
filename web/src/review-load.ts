@@ -275,7 +275,7 @@ function renderReply() {
     mean: fmtHours(s.mean[i]), you: !!p });
 }
 
-/** Reviewer response time: every turn's weekday hours. */
+/** Reviewer response time: every turn's working hours (the reviewer's). */
 function renderTurns() {
   const all = state.all!;
   const p = state.person;
