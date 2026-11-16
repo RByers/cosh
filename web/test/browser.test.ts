@@ -788,11 +788,26 @@ test('a metric toggle shows its choice before the slow re-render, and quick pick
 });
 
 test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks, without a note', async () => {
-  const classified = addressedWeeks(summary);
+  // The newest run of at least 26 classified weeks with no gap (else the
+  // longest): the table shows addressed counts only when every week of the
+  // range is classified, and the newest run overlaps Radar's usage data.
+  const isClassified = new Set(addressedWeeks(summary));
+  const all = summary.meta.weeks;
+  let best = { start: 0, end: -1 };
+  for (let i = 0; i < all.length; i++) {
+    if (!isClassified.has(all[i])) continue;
+    let j = i;
+    while (j + 1 < all.length && isClassified.has(all[j + 1])) j++;
+    if (j - i >= 25 || j - i > best.end - best.start) best = { start: i, end: j };
+    i = j;
+  }
+  const classified = all.slice(best.start, best.end + 1);
   const last = classified[classified.length - 1];
-  // Start 8 weeks before the first classified week, unless that is the first
-  // review week too (then nothing earlier exists, and the range would be clamped).
-  const from = classified[0] === summary.meta.weeks[0] ? classified[0] : addWeeks(classified[0], -8);
+  // Start before the run: 8 weeks before when no classified week precedes it,
+  // else at the unclassified week just before it. If the run starts at the
+  // first review week, nothing earlier exists (the range would be clamped).
+  const earlier = all.slice(0, best.start).some((w) => isClassified.has(w));
+  const from = best.start === 0 ? classified[0] : earlier ? all[best.start - 1] : addWeeks(classified[0], -8);
   const { page, errors } = await open(`#metric=addressed&from=${from}&to=${last}`);
   assert.equal(await page.$eval('#metric input[value="addressed"]', (i) => (i as HTMLInputElement).checked), true);
   assert.equal(await page.$eval('#metric-note', (n) => (n as HTMLElement).hidden), true);
@@ -829,13 +844,18 @@ test.skipIf(!hasAddressedWeeks())('addressed comments show only classified weeks
   const smoothed = await firstWeek();
   await page.click('#smoothing input[value="1"]');
   const raw = await firstWeek();
-  // The ratio chart starts on its first week with both review and usage data
-  // (review data starts 2023-W26, Radar's the week after), and the 3-month
-  // average 12 weeks later; both start on a ratio, not an empty week.
+  // The ratio chart starts on its first week with both review and usage data,
+  // and the 3-month average once its window is full: 12 weeks after Radar's
+  // first week, or with the range when that starts later. Both start on a
+  // ratio, not an empty week.
+  const radarFirst = readFileSync(fileURLToPath(new URL('../../data/public/radar_browser_share.csv', import.meta.url)), 'utf8')
+    .split('\n')[1].split(',')[0];
   assert.ok(raw.ratioStart >= classified[0], raw.ratioStart);
-  assert.equal(smoothed.ratioStart, addWeeks(raw.ratioStart, 12));
+  const fullWindow = addWeeks(radarFirst, 12);
+  assert.equal(smoothed.ratioStart, raw.ratioStart > fullWindow ? raw.ratioStart : fullWindow);
   assert.ok(raw.ratio !== null && smoothed.ratio !== null, `${smoothed.ratio} vs ${raw.ratio}`);
-  assert.ok(Math.abs(smoothed.review - raw.review) < 1e-9, `${smoothed.review} vs ${raw.review}`);
+  // (Only when no classified week comes before the range: those weeks are averaged in.)
+  if (!earlier) assert.ok(Math.abs(smoothed.review - raw.review) < 1e-9, `${smoothed.review} vs ${raw.review}`);
   await page.click('#smoothing input[value="13"]');
   // The intro links to the explainer in the thread box: it scrolls there without losing the URL state.
   await page.click('#addressed-link');
@@ -2523,7 +2543,11 @@ test('the Review Tone page: the Dates switch picks all, a year or a month for ev
   const months = await page.$$eval('#period-month option', (os) => os.map((o) => (o as HTMLOptionElement).value));
   assert.equal(await page.$eval('#period-month', (s) => (s as HTMLSelectElement).value), months[0]);
   assert.match(await page.$eval('#period-month option', (o) => o.textContent!), /^[A-Z][a-z]{2,3} \d{4}$/);
-  assert.match(await page.$eval('#trend-sub', (e) => e.textContent!), /The larger dot is [A-Z][a-z]{2,3} \d{4}\./);
+  // The trend has complete months only, so a month just begun has no dot to mark.
+  const label = (m: string) => page.$eval(`#period-month option[value="${m}"]`, (o) => o.textContent!);
+  const mark = () => page.$eval('#trend-sub', (e) => /The larger dot is ([^.]+)\./.exec(e.textContent!)?.[1] ?? null);
+  const newestMark = await mark();
+  if (newestMark !== null) assert.equal(newestMark, await label(months[0]));
   // The distribution follows the month: its bars add up to the month's comments.
   const bars = () => page.evaluate(() =>
     (window.__tone!['recent-dist'].data.datasets[0].data as (number | null)[]).reduce<number>((s, v) => s + (v ?? 0), 0));
@@ -2533,6 +2557,8 @@ test('the Review Tone page: the Dates switch picks all, a year or a month for ev
   await page.select('#period-month', months[1]);
   assert.match(page.url(), new RegExp(`[?&]period=${months[1]}\\b`));
   assert.notEqual(await n(), newest);
+  // The month before the newest is complete, so the trend marks it.
+  assert.equal(await mark(), await label(months[1]));
   assert.notEqual(await bars(), monthBars);
   assert.ok((await page.$$eval('#praise-given tbody tr', (trs) => trs.length)) > 0);
 

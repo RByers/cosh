@@ -1972,7 +1972,7 @@
         "cosh/work_hours.py",
         "cosh/people.py"
       ],
-      "purpose": "Reads each CL's uploads, attention set and votes from NoteDb and the listings, then reviewers' asks, answers and attention hours, and each turn's working hours. Accounts Gerrit shows with no address count as reviewers when their votes or CLs tie them to a person's address (people.exact_identities, which reads commits.sqlite).",
+      "purpose": "Reads each CL's uploads, attention set and votes from NoteDb and the listings, then reviewers' asks, answers and attention hours, and each turn's working hours.",
       "inputs": [
         "data/private/reviews.sqlite",
         "data/private/commits.sqlite",
@@ -1989,7 +1989,7 @@
       "cost_source": "data/private/scratch/timeline/walk.log; the listings and reviewers on 2026-11-14",
       "refresh": "routine",
       "run": "python3 -m cosh.review_timeline",
-      "notes": "Was the Review Balance stage `cosh.balance timeline` until 2026-11-14; Review Load reads it too, so it is its own step and the balance stages consume it. $COSH_REVIEW_TIMELINE points it and its readers at another file."
+      "notes": "Was the Review Balance stage `cosh.balance timeline` until 2026-11-14; Review Load reads it too, so it is its own step and the balance stages consume it. $COSH_REVIEW_TIMELINE points it and its readers at another file. Accounts Gerrit shows with no address count as reviewers when their votes or CLs tie them to a person's address (people.exact_identities, which reads commits.sqlite)."
     },
     {
       "id": "balance-interdiff",
