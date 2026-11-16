@@ -227,7 +227,9 @@ def main(argv=None):
                 while time.time() < until:
                     time.sleep(min(600, max(1, until - time.time())))
     elif a.cmd == "summarize":
+        from . import memcap
         from .summarize import summarize
+        memcap.join()          # about 2 GB over every week since 2017
         kw = dict(out_dir=a.out) if a.out else {}
         for r in summarize(db_path=a.db, metric=a.metric, **kw):
             print(f"{r['iso_week']}  {r['org']:<24} share={r['share']:<7} "

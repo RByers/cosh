@@ -63,18 +63,21 @@ Outputs:
                                       directory data, loaded only when it's chosen
 """
 
+import bisect
 import contextlib
 import csv
 import hashlib
 import json
 import os
 import sqlite3
+from array import array
 from collections import defaultdict
 
 from . import commits as commit_store, data_span, store
 from .extract import iso_week_of
 from .derive import METRIC_VERSION
 from .orgs import OrgResolver
+from .records import record_type
 from .paths import DIR_LIMIT, ROOT_FILES, UNPLACED, anchor, dir_tree, directory, load_scope, place
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -193,10 +196,11 @@ def comment_facts(db, resolve, scope, weeks=None, own=None):
     facts: per-(week, reviewer, org) dicts with in-scope comments (and their
     ai and post_merge subsets), chars, and cls (the set of CLs closed that
     week that the reviewer commented on in scope).
-    areas: {(week, directory, folded org): dict(comments, chars, cls, reviewers)},
+    areas: {(week, directory, folded org): Area(comments, chars, cls, reviewers,
+    addressed, pending)}, a slotted record (records.py) read like a dict,
     every comment, in scope or not (directory as from paths.directory);
-    reviewers maps account id to comments; commits (empty here) is filled by
-    commit_facts with commit id -> author account.
+    reviewers maps account id to comments. Commits go in a CommitDirs
+    (commit_facts).
     `weeks`: the weeks to keep, or None for all.
 
     A patchset-level comment is placed on its author's own anchor on that CL
@@ -206,8 +210,7 @@ def comment_facts(db, resolve, scope, weeks=None, own=None):
     own = reviewer_anchors(db) if own is None else own
     inline_authors = {(host, aid) for host, _, aid in own}
     facts = {}
-    areas = defaultdict(lambda: dict(comments=0, chars=0, cls=set(), reviewers=defaultdict(int),
-                                     addressed=0, pending=0, commits={}))
+    areas = defaultdict(lambda: Area(0, 0, set(), {}, 0, 0))
     keep = (lambda w: True) if weeks is None else weeks.__contains__
     cache = {}
 
@@ -242,7 +245,7 @@ def comment_facts(db, resolve, scope, weeks=None, own=None):
         g = areas[(week, area, fold(org))]
         g["comments"] += n
         g["chars"] += chars
-        g["reviewers"][aid] += n
+        g["reviewers"][aid] = g["reviewers"].get(aid, 0) + n
         g["addressed"] += int(addr)
         g["pending"] += pend
         if included:
@@ -269,24 +272,64 @@ def comment_facts(db, resolve, scope, weeks=None, own=None):
     return list(facts.values()), areas
 
 
-def commit_facts(db, resolve, scope, facts, areas, weeks=None, commits_path=None):
+# comment_facts' areas hold ~600k of these (2017..2026): a dict each was ~1.5 KB.
+Area = record_type("Area", ["comments", "chars", "cls", "reviewers", "addressed", "pending"])
+
+
+class CommitDirs:
+    """The directories of each counted commit, compactly: one small int per
+    (commit, directory). A dict entry per (week, directory, org), as areas
+    has, took ~1.5 KB each, and commits make ~2M of them over 2017..2026."""
+
+    def __init__(self):
+        self.dirs, self.orgs, self.weeks = [], [], []     # index -> value
+        self._ix = ({}, {}, {})
+        self.commits = array("i")      # per commit: id, week, folded org, dirs start
+        self.dir_ids = array("i")
+
+    def _id(self, i, values, v):
+        n = self._ix[i].get(v)
+        if n is None:
+            n = self._ix[i][v] = len(values)
+            values.append(v)
+        return n
+
+    def add(self, cid, week, org, dirs):
+        self.commits.extend((cid, self._id(2, self.weeks, week), self._id(1, self.orgs, org),
+                             len(self.dir_ids)))
+        self.dir_ids.extend(self._id(0, self.dirs, d) for d in dirs)
+
+    def __iter__(self):
+        """(commit id, week, folded org, [directory index]) per commit, in the order added."""
+        c, n = self.commits, len(self.commits)
+        for i in range(0, n, 4):
+            end = c[i + 7] if i + 4 < n else len(self.dir_ids)
+            yield c[i], self.weeks[c[i + 1]], self.orgs[c[i + 2]], self.dir_ids[c[i + 3]:end]
+
+
+def commit_facts(db, resolve, scope, facts, weeks=None, commits_path=None):
     """Adds the commits on main (commits.sqlite, cosh/commits.py) to
-    comment_facts' results.
+    comment_facts' facts.
 
     Human commits only, each in the ISO week it landed, credited to its git
     author's org as of that day. A commit counts in scope (`facts`) if any
-    file it touches is in scope; `areas` gets every commit, in each directory
-    it touches (as reviewed CLs do). The author's Gerrit account is the one
-    with the git author's email, else the CL owner's; a commit with neither
-    still counts for its org but for no person. Facts and areas are updated
-    in place; returns per-(week, folded org) {"commits": n, "authors": set}
-    over in-scope commits, authors being emails. Without commits.sqlite
-    there are no commits."""
+    file it touches is in scope; the returned CommitDirs gets every commit,
+    with each directory it touches (as areas has reviewed CLs). The author's
+    Gerrit account is the one with the git author's email, else the CL
+    owner's; a commit with neither
+    still counts for its org but for no person. Facts are updated in place.
+    Returns (per-(week, folded org) {"commits": n, "authors": set} over
+    in-scope commits, authors being emails; {commit id: author account} for
+    the commits that have one; a CommitDirs of every commit, for the
+    directory files). Without commits.sqlite there are no commits. Commits
+    and their files are streamed, newest first."""
     keep = (lambda w: True) if weeks is None else weeks.__contains__
     out = defaultdict(lambda: dict(commits=0, authors=set()))
+    author_of = {}
+    cdirs = CommitDirs()
     cdb = commit_store.open_ro(commits_path)
     if cdb is None:
-        return out
+        return out, author_of, cdirs
     by_email = {}
     names = {}
     for aid, email, name, bot in db.execute(
@@ -296,23 +339,31 @@ def commit_facts(db, resolve, scope, facts, areas, weeks=None, commits_path=None
             by_email.setdefault(email.lower(), aid)
     owner = dict(db.execute("SELECT change_number, owner_account FROM changes WHERE branch = 'main'"))
     index = {(f["week"], f["account_id"], f["org"]): f for f in facts}
-    rows, lo = commit_store.value_commits(cdb, db)
-    rows = [r for r in rows if not r[4]]
-    dirs_of = {cid: sorted(c) for cid, c in commit_store.dirs_of(cdb, lo, [r[0] for r in rows]).items()}
-    cdb.close()
+    lo = commit_store.value_window(cdb, db)
+    # Both streams run newest first, so each commit meets its directories.
+    dir_stream = commit_store.iter_dirs(cdb, lo)
+    next_dirs = next(dir_stream, None)
     included = {}
-    for cid, cl, email, landed, _, n_files in rows:
+    for cid, cl, email, landed, bot, n_files in commit_store.iter_value_commits(cdb, db, lo):
+        while next_dirs is not None and next_dirs[0] > cid:
+            next_dirs = next(dir_stream, None)
+        if bot:
+            continue
         week, day = iso_week_of(landed), landed[:10]
         if not keep(week):
             continue
         org = resolve(email, day)
         aid = by_email.get(email) or owner.get(cl)
+        if aid is not None:
+            author_of[cid] = aid
         in_scope = False
-        for d in dirs_of.get(cid, ()):
+        dirs = next_dirs[1] if next_dirs is not None and next_dirs[0] == cid else ()
+        for d in dirs:
             if d not in included:
                 included[d] = d == ROOT_FILES or scope.includes(d)
             in_scope |= included[d]
-            areas[(week, d, fold(org))]["commits"][cid] = aid
+        if dirs:
+            cdirs.add(cid, week, fold(org), dirs)
         if not in_scope:
             continue
         o = out[(week, fold(org))]
@@ -329,17 +380,21 @@ def commit_facts(db, resolve, scope, facts, areas, weeks=None, commits_path=None
             facts.append(f)
         f["commits"] += 1
         f["files"] += n_files     # every file it changes, in scope or not: its size
-    return out
+    cdb.close()
+    return out, author_of, cdirs
 
 
 def thread_breakdown(db, scope, own, weeks=None):
     """How the in-scope, reviewer-started threads of each week were decided.
 
+    Example candidates: only the EXAMPLES_PER_OUTCOME with the smallest sort
+    keys per week and outcome, the ones write_thread_examples picks.
+
     A thread belongs to the week its root comment was written, and is in
     scope if its root comment is (placed like comment_facts places
     comments). Returns ({week: {outcome: threads}}, {week: {outcome:
     [(sort key, host, cl, root_uuid, path)]}}): the second holds candidates
-    for example threads."""
+    for example threads (see above)."""
     inline_authors = {(host, aid) for host, _, aid in own}
     counts = defaultdict(lambda: dict.fromkeys(THREAD_OUTCOMES, 0))
     picks = defaultdict(lambda: defaultdict(list))
@@ -366,7 +421,14 @@ def thread_breakdown(db, scope, own, weeks=None):
                    else "model_addressed" if label else "model_not")
         counts[week][outcome] += 1
         if outcome in EXAMPLE_OUTCOMES:
-            picks[week][outcome].append((hashlib.sha1(root.encode()).hexdigest(), host, cl, root, path))
+            # Only the EXAMPLES_PER_OUTCOME smallest are ever shown: keep those.
+            best = picks[week][outcome]
+            pick = (hashlib.sha1(root.encode()).hexdigest(), host, cl, root, path)
+            if len(best) < EXAMPLES_PER_OUTCOME:
+                bisect.insort(best, pick)
+            elif pick < best[-1]:
+                bisect.insort(best, pick)
+                best.pop()
     return dict(counts), picks
 
 
@@ -438,7 +500,8 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
     classifier = load_labels(db, data_dir)
     own = reviewer_anchors(db)
     facts, areas = comment_facts(db, resolve, scope, weeks, own)
-    commits = commit_facts(db, resolve, scope, facts, areas, weeks, commit_store.db_path(data_dir))
+    commits, commit_authors, commit_dirs = commit_facts(db, resolve, scope, facts, weeks,
+                                                        commit_store.db_path(data_dir))
     threads, thread_picks = thread_breakdown(db, scope, own, weeks)
 
     folded = defaultdict(lambda: dict(reviewers=set(), cls=set(), comments=0, chars=0, ai=0,
@@ -503,7 +566,8 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
         w = csv.writer(fh)
         w.writerow(TOTALS_COLS)
         w.writerows(weekly)
-    all_weeks = sorted(weeks) if weeks is not None else sorted({k[0] for k in areas} | set(totals))
+    all_weeks = (sorted(weeks) if weeks is not None
+                 else sorted({k[0] for k in areas} | set(commit_dirs.weeks) | set(totals)))
     # Share of each week's in-scope comments whose point is decided (regex,
     # label, or scoring nothing by rule). The UI shows the addressed metric
     # only for weeks at COVERAGE_COMPLETE or above.
@@ -566,7 +630,9 @@ def summarize(data_dir=store.DATA_DIR, out_dir=os.path.join(ROOT, "summaries"), 
     db.close()
     write_reviewers(facts, os.path.join(out_dir, REVIEWERS_FILE))
     write_authors(facts, os.path.join(out_dir, AUTHORS_FILE))
-    area_meta = write_areas(areas, scope, os.path.join(out_dir, AREAS_FILE))
+    area_meta = write_areas(areas, scope, os.path.join(out_dir, AREAS_FILE), commit_dirs=commit_dirs)
+    del areas, commit_dirs                     # write_areas emptied them
+    area_meta["commit_authors"] = commit_authors
     write_area_reviewers(area_meta, os.path.join(out_dir, AREA_REVIEWERS_FILE))
     write_area_commits(area_meta, os.path.join(out_dir, AREA_COMMITS_FILE),
                        os.path.join(out_dir, AREA_AUTHORS_FILE))
@@ -675,7 +741,7 @@ def write_authors(facts, path):
         fh.write("\n }\n}\n")
 
 
-def write_areas(areas, scope, path, limit=DIR_LIMIT):
+def write_areas(areas, scope, path, limit=DIR_LIMIT, commit_dirs=None):
     """area_weekly.json: comments, reviewed CLs and chars per (week, directory,
     org) over every comment, in scope or not, as a tree the web UI drills into
     (paths.dir_tree: the areas as roots, then the `limit` directories with the
@@ -690,15 +756,30 @@ def write_areas(areas, scope, path, limit=DIR_LIMIT):
     parent. cls counts (CL, bucket) pairs: a CL with comments in two directories
     counts in both. Orgs are folded like org_weekly. Commits per bucket go in
     a file of their own (write_area_commits): they touch many more
-    directories than comments do, and only the Commits metric needs them."""
+    directories than comments do, and only the Commits metric needs them.
+    `commit_dirs` (a CommitDirs) gives each commit's directories: a commit
+    counts once in each bucket it touches (area_meta's commit_buckets).
+    Empties `areas` and `commit_dirs` as it goes, so the buckets don't
+    double their memory."""
+    if commit_dirs is None:
+        commit_dirs = CommitDirs()
     totals = defaultdict(int)
     for (_, d, _), g in areas.items():
-        totals[d] += g["comments"]   # directories with only commits are listed too, ranked last
+        totals[d] += g["comments"]
+    for d in commit_dirs.dirs:
+        totals[d] += 0               # directories with only commits are listed too, ranked last
     nodes, bucket = dir_tree(totals, scope, limit)
     index = {d: i for i, (d, _) in enumerate(nodes)}
-    buckets = defaultdict(lambda: dict(comments=0, chars=0, cls=set(), reviewers=defaultdict(int), addressed=0,
-                                       commits={}))
-    for (week, d, org), g in areas.items():
+    buckets = defaultdict(lambda: dict(comments=0, chars=0, cls=set(), reviewers=defaultdict(int), addressed=0))
+    orgs = sorted({o for _, _, o in areas} | set(commit_dirs.orgs))
+    node_of = [index[bucket(d)] for d in commit_dirs.dirs]
+    commit_buckets = defaultdict(lambda: array("i"))
+    for cid, week, org, dir_ids in commit_dirs:
+        for n in {node_of[i] for i in dir_ids}:
+            commit_buckets[(week, n, org)].append(cid)
+    commit_dirs.commits, commit_dirs.dir_ids = array("i"), array("i")
+    while areas:
+        (week, d, org), g = areas.popitem()
         b = buckets[(week, index[bucket(d)], org)]
         b["comments"] += g["comments"]
         b["chars"] += g["chars"]
@@ -706,8 +787,6 @@ def write_areas(areas, scope, path, limit=DIR_LIMIT):
         b["cls"] |= g["cls"]
         for aid, n in g["reviewers"].items():
             b["reviewers"][aid] += n
-        b["commits"].update(g.get("commits", {}))   # commit id -> author account (or None)
-    orgs = sorted({o for _, _, o in areas})
     org_index = {o: i for i, o in enumerate(orgs)}
     weeks = defaultdict(list)
     for (week, n, org), b in sorted(buckets.items(), key=lambda kv: (kv[0][0], kv[0][1], kv[0][2])):
@@ -735,7 +814,8 @@ def write_areas(areas, scope, path, limit=DIR_LIMIT):
         fh.write(",".join('\n  %s: %s' % (json.dumps(w), json.dumps(rows, separators=(",", ":")))
                           for w, rows in sorted(weeks.items())))
         fh.write("\n }\n}\n")
-    return dict(buckets=buckets, org_index=org_index, generated_at=meta["generated_at"])
+    return dict(buckets=buckets, commit_buckets=commit_buckets, org_index=org_index,
+                generated_at=meta["generated_at"])
 
 
 def write_area_reviewers(area_meta, path):
@@ -778,13 +858,13 @@ def write_area_commits(area_meta, commits_path, authors_path):
     with (`areas_generated_at`); the web UI loads them only for the Commits
     metric."""
     org_index = area_meta["org_index"]
+    author_of = area_meta.get("commit_authors", {})
     counts, authors = defaultdict(list), defaultdict(list)
-    for (week, node, org), b in sorted(area_meta["buckets"].items()):
-        if not b["commits"]:
-            continue
-        counts[week].append([node, org_index[org], len(b["commits"])])
+    for (week, node, org), ids in sorted(area_meta["commit_buckets"].items()):
+        counts[week].append([node, org_index[org], len(ids)])
         people = defaultdict(int)
-        for aid in b["commits"].values():
+        for cid in ids:
+            aid = author_of.get(cid)
             if aid is not None:
                 people[aid] += 1
         if people:

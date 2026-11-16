@@ -779,22 +779,53 @@ def dirs_of(db, lo, ids=None):
 
 def value_commits(db, ddb):
     """The commits the Value Exchange page counts, newest first: those landed
-    since reviews.sqlite's oldest fetched week. Yields (commit_id, CL, author
-    email, landed 'YYYY-MM-DD HH:MM:SS' UTC, is_bot, files). A commit is a
-    bot's if its CL's owner is a bot (changes.is_bot_owned) or config/bots.txt
-    matches its git author: some bots (e.g. a WebLayer builder) author commits
-    on CLs a person owns. Commits of a large-scale change (is_lsc) aren't
-    counted at all. Also returns the window's lower bound."""
-    lo = window_start(db, derived_since(ddb) + "T00:00:00Z")
-    bot_owned = dict(ddb.execute("SELECT change_number, is_bot_owned FROM changes WHERE branch = 'main'"))
-    rows = []
+    since reviews.sqlite's oldest fetched week. Returns ([(commit_id, CL,
+    author email, landed 'YYYY-MM-DD HH:MM:SS' UTC, is_bot, files)], the
+    window's lower bound); iter_value_commits streams the same rows. A
+    commit is a bot's if its CL's owner is a bot (changes.is_bot_owned) or
+    config/bots.txt matches its git author: some bots (e.g. a WebLayer
+    builder) author commits on CLs a person owns. Commits of a large-scale
+    change (is_lsc) aren't counted at all."""
+    lo = value_window(db, ddb)
+    return list(iter_value_commits(db, ddb, lo)), lo
+
+
+def value_window(db, ddb):
+    """value_commits' lower bound: commits after it are in the window."""
+    return window_start(db, derived_since(ddb) + "T00:00:00Z")
+
+
+def iter_value_commits(db, ddb, lo):
+    """value_commits' rows after `lo`, one at a time, newest first."""
+    bot_owned = {cl for (cl,) in ddb.execute(
+        "SELECT change_number FROM changes WHERE branch = 'main' AND is_bot_owned")}
     for cid, cl, email, landed, files in db.execute(
             "SELECT commit_id, change_number, author_email, landed_at, files FROM commits "
             "WHERE commit_id > ? AND NOT is_lsc ORDER BY commit_id DESC", (lo,)):
-        bot = bool(bot_owned.get(cl)) or is_bot_email(email)
+        bot = cl in bot_owned or is_bot_email(email)
         day = datetime.fromtimestamp(landed, timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
-        rows.append((cid, cl, email, day, int(bot), files))
-    return rows, lo
+        yield cid, cl, email, day, int(bot), files
+
+
+def iter_dirs(db, lo):
+    """(commit_id, sorted paths.directory list) for each commit after `lo`
+    that changes a file, newest first, streamed (dirs_of holds them all)."""
+    from .paths import directory
+    cache = {}
+    cur, dirs = None, set()
+    for cid, pid in db.execute("SELECT commit_id, path_id FROM commit_files WHERE commit_id > ? "
+                               "ORDER BY commit_id DESC", (lo,)):
+        if cid != cur:
+            if cur is not None:
+                yield cur, sorted(dirs)
+            cur, dirs = cid, set()
+        d = cache.get(pid)
+        if d is None:
+            d = cache[pid] = sys.intern(directory(
+                db.execute("SELECT path FROM paths WHERE path_id = ?", (pid,)).fetchone()[0]))
+        dirs.add(d)
+    if cur is not None:
+        yield cur, sorted(dirs)
 
 
 def first_commits(db):
