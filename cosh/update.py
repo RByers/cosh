@@ -96,10 +96,14 @@ def signature(path):
         return None
     if os.path.isfile(path):
         out = []
-        for f in (path, path + "-wal"):    # an SQLite file's writes may sit in its WAL
+        # An SQLite file's writes may sit in its WAL, which SQLite keeps next to
+        # the real file, not next to a symlink to it (DATA.md: the stores on
+        # /protected are reached through symlinks).
+        real = os.path.realpath(path)
+        for f, name in ((path, os.path.basename(path)), (real + "-wal", os.path.basename(path) + "-wal")):
             if os.path.exists(f):
                 st = os.stat(f)
-                out.append((os.path.basename(f), st.st_size, st.st_mtime_ns))
+                out.append((name, st.st_size, st.st_mtime_ns))
         return out
     if _is_git(path):
         return _git_refs(path)

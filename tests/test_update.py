@@ -126,5 +126,24 @@ class UpdateTraceTest(unittest.TestCase):
             self.assertGreater(rec["peak_rss_mb"], 0)
 
 
+class SignatureTest(unittest.TestCase):
+    def test_sees_the_wal_of_a_symlinked_sqlite_file(self):
+        # Stores on /protected are symlinks; SQLite puts the WAL beside the real file.
+        with tempfile.TemporaryDirectory() as d:
+            real = os.path.join(d, "real")
+            os.mkdir(real)
+            db = os.path.join(real, "x.sqlite")
+            for f in (db, db + "-wal"):
+                with open(f, "w") as fh:
+                    fh.write("a")
+            link = os.path.join(d, "x.sqlite")
+            os.symlink(db, link)
+            self.assertEqual([n for n, *_ in update.signature(link)], ["x.sqlite", "x.sqlite-wal"])
+            before = update.signature(link)
+            with open(db + "-wal", "a") as fh:
+                fh.write("more")
+            self.assertNotEqual(update.signature(link), before)
+
+
 if __name__ == "__main__":
     unittest.main()

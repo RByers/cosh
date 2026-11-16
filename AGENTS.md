@@ -200,6 +200,14 @@ purpose near the top of its own doc.
   pass `derive --out` / `summarize --db` a scratch path. `derive` and
   `summarize` open `gerrit.sqlite` read-only, so they're safe while an extractor
   runs.
+- **The stores that can't be rebuilt live on `/protected`** (snapshotted,
+  monthly snapshots kept forever), each reached through a symlink at its
+  usual `data/private/` path: NoteDb, `gerrit.sqlite`, the patch-set repo,
+  `addressed.sqlite`, `sentiment.sqlite`, `ai_predict/`, `bugs/`,
+  `chrome_releases/`, `feedback-coach/` and the tone-tuning files. `DATA.md`
+  lists them and the rules: nothing written there is ever freed, so append,
+  don't rewrite or repack whole, and never replace one of the links with a
+  plain file. A new store that can't be rebuilt goes there too.
 - Web UI: `web/` (Vite + TypeScript, Chart.js), one page per dashboard
   (`web/value.html` is Value Exchange) plus the landing page
   `web/index.html`, which has a card for each one. A new dashboard needs a
@@ -244,7 +252,9 @@ purpose near the top of its own doc.
     clone. That repack rolls up only the smallest packs, up to
     `--repack-max-gb` (default 2) in all, under `cosh.memcap`. **Repack by
     hand once a year** (next: November 2027, or sooner when a run prints
-    that there are 60+ packs), in groups as below. The fetch is done and the repo was
+    that there are 60+ packs), in groups as below, and only the packs
+    added since the last repack: the repo is on `/protected`, where a
+    whole repack adds 18 GB that is never freed (`DATA.md`). The fetch is done and the repo was
     repacked on 2026-11-09 (19 GB, 4 packs). A whole-repo repack runs out
     of memory on argus, so repack in groups and keep old packs until
     checked: `scripts/patchsets_chunked_repack.sh`, then
