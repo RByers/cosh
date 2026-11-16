@@ -62,13 +62,22 @@ def bwrap_works(bwrap, extra=()):
         return False
 
 
+def find_claude(claude="claude"):
+    """The claude executable: on PATH, else in ~/.local/bin, where the native installer puts it.
+    A `systemd-run --user` service gets systemd's PATH, which leaves ~/.local/bin out."""
+    exe = shutil.which(claude)
+    if not exe and os.sep not in claude:
+        exe = shutil.which(claude, path=os.path.expanduser("~/.local/bin"))
+    return exe
+
+
 class Sandbox:
     """Runs claude, one call at a time per run(); safe to share across threads."""
 
     def __init__(self, mode="auto", hide=(), claude="claude", credentials=None):
-        exe = shutil.which(claude)
+        exe = find_claude(claude)
         if not exe:
-            raise SystemExit(f"{claude} not found on PATH")
+            raise SystemExit(f"{claude} not found on PATH or in ~/.local/bin")
         self.claude = os.path.realpath(exe)
         self.credentials = find_credentials() if credentials is None else credentials
         if not self.credentials:

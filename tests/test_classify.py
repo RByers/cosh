@@ -240,6 +240,18 @@ class PendingTest(unittest.TestCase):
 
 
 class SandboxTest(unittest.TestCase):
+    def test_find_claude_falls_back_to_local_bin(self):
+        # A systemd-run --user service's PATH leaves out ~/.local/bin.
+        with tempfile.TemporaryDirectory() as home:
+            os.makedirs(os.path.join(home, ".local", "bin"))
+            exe = os.path.join(home, ".local", "bin", "claude")
+            with open(exe, "w") as f:
+                f.write("#!/bin/sh\n")
+            os.chmod(exe, 0o755)
+            with mock.patch.dict(os.environ, {"HOME": home, "PATH": "/nonexistent"}):
+                self.assertEqual(sandbox.find_claude(), exe)
+                self.assertIsNone(sandbox.find_claude("no-such-claude"))
+
     def test_credentials_from_env_else_settings(self):
         self.assertEqual(sandbox.find_credentials({"CLAUDE_CODE_OAUTH_TOKEN": "a", "X": "y"}),
                          {"CLAUDE_CODE_OAUTH_TOKEN": "a"})

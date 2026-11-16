@@ -232,7 +232,15 @@ it that way:
   plan <id> ...` prints what to rerun, in order, and which files to commit
   when a source or store has new data (a new Gerrit week: `plan gerrit`);
   `python3 -m cosh update` runs the free, local steps of that plan and
-  lists the rest (fetches, model calls).
+  lists the rest (fetches, model calls). Start it from the main checkout
+  as a user service, so it outlives the session:
+  `T=$(date +%Y%m%d-%H%M); systemd-run --user --unit=cosh-update-$T
+  --nice=5 --working-directory=$PWD --setenv=PATH=$HOME/.local/bin:$PATH
+  -p StandardOutput=append:$PWD/data/private/logs/update-$T.log -p
+  StandardError=append:$PWD/data/private/logs/update-$T.log python3 -m
+  cosh update`. A service gets systemd's PATH, without `~/.local/bin`
+  (`claude`): `cosh.sandbox` looks there too, and `--setenv` covers the
+  rest.
 - **Approved fetch ranges are data**: `config/approved.json`, which
   `extract`, `backfill`, `patchsets` and `cosh.bugs` enforce. Widen a range
   only after the user approves, in the same commit as a `docs/plan.md`
@@ -338,7 +346,7 @@ it that way:
   - Both repos (the shared clone and `chromium-patchsets.git`) set
     `log.mailmap false`, `gc.auto 0` and `maintenance.auto false`. Never
     delete or prune either one. Fetching other branches,
-    other repos, or patch sets beyond 2026-W45 (approved 2026-11-15, `config/approved.json`) needs approval.
+    other repos, or patch sets beyond 2026-W46 (approved 2026-11-16, `config/approved.json`) needs approval.
   - Every fetch into either repo takes the extract lock
     (`flock data/private/extract.lock` in the main checkout), like any
     other extractor.
