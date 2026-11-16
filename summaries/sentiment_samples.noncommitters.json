@@ -1,9 +1,9 @@
 {
- "generated_at": "2026-11-16T11:58:58Z",
+ "generated_at": "2026-11-16T14:09:03Z",
  "prompt": "v3",
  "weeks": [
-  "2025-W46",
-  "2026-W45"
+  "2025-W47",
+  "2026-W46"
  ],
  "authors": "noncommitters",
  "praise_min": 0.5,
@@ -129,11 +129,6 @@
      "month": "2026-03"
     },
     {
-     "text": "you dot get a vote",
-     "score": -0.6,
-     "month": "2025-11"
-    },
-    {
      "text": "Who are u",
      "score": -0.6,
      "month": "2026-03"
@@ -142,6 +137,11 @@
      "text": "Who are u",
      "score": -0.6,
      "month": "2026-03"
+    },
+    {
+     "text": "Sir how could you be a owner of this",
+     "score": -0.6,
+     "month": "2026-08"
     }
    ]
   },
@@ -188,14 +188,6 @@
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7145539/comment/6b977d07_c058ceac/"
     },
     {
-     "text": "Knowledge point +1. Thank you for debugging this issue.",
-     "score": 0.5,
-     "date": "2025-11-10",
-     "writer": "Qikai Zhong",
-     "recipient": "Thomas Lukaszewicz",
-     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7096798/comment/92a1a0ce_4c5975d3/"
-    },
-    {
      "text": "Ah, that's a great explanation, thank you Vinny!",
      "score": 0.5,
      "date": "2025-11-20",
@@ -226,15 +218,17 @@
      "writer": "Dwayne Robinson",
      "recipient": "Xu, Mingming1",
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7245170/comment/9f711749_89f6fa8d/"
+    },
+    {
+     "text": "I've just implemented the requested changes to include the use of `RuntimeEnabledFeature`, see the last patchset I pushed.\n\nAdditionally, I've created a PR to update the Layout Instability spec, [here](https://github.com/WICG/layout-instability/pull/126)",
+     "score": 0.5,
+     "date": "2025-12-02",
+     "writer": "Ane Diaz De Tuesta",
+     "recipient": "Scott Haseley",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7196706/comment/b228c8f5_7dbc681f/"
     }
    ],
-   "grumpy": [
-    {
-     "text": "you dot get a vote",
-     "score": -0.6,
-     "month": "2025-11"
-    }
-   ]
+   "grumpy": []
   },
   "2025-11": {
    "praise": [
@@ -263,14 +257,6 @@
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7145539/comment/6b977d07_c058ceac/"
     },
     {
-     "text": "Knowledge point +1. Thank you for debugging this issue.",
-     "score": 0.5,
-     "date": "2025-11-10",
-     "writer": "Qikai Zhong",
-     "recipient": "Thomas Lukaszewicz",
-     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7096798/comment/92a1a0ce_4c5975d3/"
-    },
-    {
      "text": "Ah, that's a great explanation, thank you Vinny!",
      "score": 0.5,
      "date": "2025-11-20",
@@ -295,13 +281,7 @@
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7115438/comment/4b9d50e0_b18a9184/"
     }
    ],
-   "grumpy": [
-    {
-     "text": "you dot get a vote",
-     "score": -0.6,
-     "month": "2025-11"
-    }
-   ]
+   "grumpy": []
   },
   "2025-12": {
    "praise": [
@@ -1216,12 +1196,36 @@
   "2026-11": {
    "praise": [
     {
+     "text": "Thank you for this important catch. Done, Load() now reads, parses, and validates the proto on the background sequence. Adapter and manifest construction happen on the broker sequence. I’ll follow up on Steven’s suggestion to use SolutionConfig directly in the broker in next CL.",
+     "score": 0.5,
+     "date": "2026-11-09",
+     "writer": "Fei Chen",
+     "recipient": "Sorin Jianu",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8667222/comment/277f8561_616b7c21/"
+    },
+    {
+     "text": "Great feedback and a much cleaner result. Thanks for the suggestions!",
+     "score": 0.5,
+     "date": "2026-11-11",
+     "writer": "Kyle Farnung",
+     "recipient": "Shunya Shishido",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8778186/comment/ecc38834_adb2affa/"
+    },
+    {
      "text": "LGTM\n\nThat's exactly what I meant, thank you very much for pursuing this refactor. \nThanks to this chain of CLs, we have service logic much cleaner and business focused. \nMoreover, removal of the RedirecMetricsRecorder will be a plain sailing, as it'll simply require removal of lines where its methods are called.",
      "score": 0.5,
      "date": "2026-11-02",
      "writer": "Jakub Kudzia",
      "recipient": "Yerassyl Kutylbek",
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8598446/comment/5812ccbd_1aa08f5e/"
+    },
+    {
+     "text": "No worries at all, and thanks for your time and patience! As a beginner I’m learning a lot from your reviews.",
+     "score": 0.5,
+     "date": "2026-11-12",
+     "writer": "Mostafa Aboalkasim",
+     "recipient": "David Baron",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8759032/comment/b06370c6_3aa7d5e6/"
     }
    ],
    "grumpy": []

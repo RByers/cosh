@@ -1,20 +1,16 @@
 {
- "generated_at": "2026-11-16T11:58:54Z",
+ "generated_at": "2026-11-16T14:08:54Z",
  "prompt": "v3",
  "model": "haiku",
  "weeks": [
-  "2025-W46",
-  "2026-W45"
+  "2025-W47",
+  "2026-W46"
  ],
  "authors": "noncommitters",
  "threshold": 0.4,
  "angry": -0.3,
  "net_scale": 5.0,
  "coverage": [
-  {
-   "week": "2025-W46",
-   "unscored": 0
-  },
   {
    "week": "2025-W47",
    "unscored": 0
@@ -218,6 +214,10 @@
   {
    "week": "2026-W45",
    "unscored": 0
+  },
+  {
+   "week": "2026-W46",
+   "unscored": 0
   }
  ],
  "people": {
@@ -244,6 +244,7 @@
   "asvitkine@chromium.org": "Alexei Svitkine",
   "avi@chromium.org": "Avi Drissman",
   "bajones@chromium.org": "Brandon Jones",
+  "bashi@chromium.org": "Kenichi Ishibashi",
   "battre@chromium.org": "Dominic Battré",
   "behery@google.com": "Hamzah Behery",
   "benjamin.beaudry@microsoft.com": "Benjamin Beaudry",
@@ -269,6 +270,7 @@
   "daniec@microsoft.com": "Dan Clark",
   "davidben@chromium.org": "David Benjamin",
   "davidbienvenu@chromium.org": "David Bienvenu",
+  "dbaron@chromium.org": "David Baron",
   "desiatyrikov@google.com": "Oleh Desiatyrikov",
   "dev@nikwen.de": "Niklas Wenzel",
   "dfried@chromium.org": "Dana Fried",
@@ -283,6 +285,7 @@
   "dtseng@chromium.org": "David Tseng",
   "dwayner@microsoft.com": "Dwayne Robinson",
   "dwing3@gmail.com": "Lury O Williams",
+  "e.m.terhoeven@student.tudelft.nl": "Ewout ter Hoeven",
   "eladalon@chromium.org": "Elad Alon",
   "emretekdersin@gmail.com": "Emre TEKE",
   "ender@google.com": "Tomasz Wiszkowski",
@@ -320,13 +323,14 @@
   "hthadicherla@nvidia.com": "Hrishith Thadicherla IN",
   "ibrahimusmanabdullahi1122@gmail.com": "IBRAHIM USMAN",
   "ilnik@chromium.org": "Ilya Nikolaevskiy",
+  "imagebuilder1837@outlook.com": "Image Builder",
   "ireneuszszulc@google.com": "Ireneusz Szulc",
+  "issackjohn@microsoft.com": "Issack John",
   "jaeone@google.com": "Jaewon Lee",
   "janewman@microsoft.com": "Jacques Newman",
   "japhet@chromium.org": "Nate Chapin",
   "jarhar@chromium.org": "Joey Arhar",
   "jaysonchen@microsoft.com": "Jayson Chen",
-  "jdeblasio@chromium.org": "Joe DeBlasio",
   "jdiggs@igalia.com": "Joanmarie Diggs",
   "jdoerrie@chromium.org": "Jan Wilken Dörrie",
   "jiahe.zhang@intel.com": "Zhang, Jiahe",
@@ -348,6 +352,7 @@
   "kbabbitt@microsoft.com": "Kevin Babbitt",
   "kelvinjiang@chromium.org": "Kelvin Jiang",
   "kerenzhu@chromium.org": "Keren Zhu",
+  "kfarnung@microsoft.com": "Kyle Farnung",
   "kimjae@chromium.org": "Jae Hoon Kim",
   "klauxsa@gmail.com": "Klaus Vampirelights",
   "kojii@chromium.org": "Koji Ishii",
@@ -393,6 +398,7 @@
   "mkwst@chromium.org": "Mike West",
   "mmenke@chromium.org": "mmenke",
   "mmoskvitin@google.com": "Maksim Moskvitin",
+  "mostafa.aboalkasim.offical@gmail.com": "Mostafa Aboalkasim",
   "mstensho@chromium.org": "Morten Stenshorne",
   "msw@chromium.org": "Mike Wasserman",
   "mtatarski@google.com": "Michael Tatarski",
@@ -435,7 +441,6 @@
   "rhalavati@chromium.org": "Ramin Halavati",
   "rkgibson@google.com": "Robbie Gibson",
   "rushans@google.com": "Rushan Suleymanov",
-  "ryandickson@google.com": "Ryan Dickson",
   "ryohiy.dev@gmail.com": "Ryo Hiyoshi",
   "saboyapati@google.com": "Sandeep Boyapati (xWF)",
   "sadym@chromium.org": "Maksim Sadym",
@@ -454,13 +459,13 @@
   "simon.roehrl01@gmail.com": "Simon Röhrl",
   "simon@zappar.com": "Simon Taylor",
   "singhnischal953@gmail.com": "NISCHAL SINGH",
+  "sisidovski@chromium.org": "Shunya Shishido",
   "skydebreuil@google.com": "Sky Debreuil",
   "skym@chromium.org": "Sky Malice",
   "soosungp33@gmail.com": "YeongHan Kim",
   "sorin@chromium.org": "Sorin Jianu",
   "sushin@nvidia.com": "Sun Shin US",
   "t-oheneosei@microsoft.com": "Ohene Osei",
-  "tangm@microsoft.com": "Michael Tang",
   "tarcisio.fischer@arm.com": "Tarcísio Fischer",
   "tasak@google.com": "Takashi Sakamoto",
   "tchudakov@google.com": "Timofey Chudakov",
@@ -473,10 +478,12 @@
   "tkent@chromium.org": "Kent Tamura",
   "tkfydtls464@gmail.com": "injun choi",
   "tluk@chromium.org": "Thomas Lukaszewicz",
+  "tmathmeyer@chromium.org": "Ted (Chromium) Meyer",
   "toyoshim@chromium.org": "Takashi Toyoshima",
   "treib@chromium.org": "Marc Treib",
   "troywang@google.com": "Troy Wang",
   "tsepez@chromium.org": "Tom Sepez",
+  "tzachbonfil@gmail.com": "Tzach Bonfil",
   "ukai@google.com": "Fumitoshi Ukai",
   "ulas@google.com": "Ulas Kirazci",
   "utzcoz@gmail.com": "utzcoz",
@@ -516,42 +523,6 @@
   "zmo@chromium.org": "Zhenyao Mo"
  },
  "weekly": [
-  {
-   "week": "2025-W46",
-   "email": "dev@nikwen.de",
-   "given": 1,
-   "received": 0
-  },
-  {
-   "week": "2025-W46",
-   "email": "jdeblasio@chromium.org",
-   "given": 0,
-   "received": 1
-  },
-  {
-   "week": "2025-W46",
-   "email": "qikaizhong@microsoft.com",
-   "given": 1,
-   "received": 0
-  },
-  {
-   "week": "2025-W46",
-   "email": "ryandickson@google.com",
-   "given": 1,
-   "received": 0
-  },
-  {
-   "week": "2025-W46",
-   "email": "tangm@microsoft.com",
-   "given": 0,
-   "received": 1
-  },
-  {
-   "week": "2025-W46",
-   "email": "tluk@chromium.org",
-   "given": 0,
-   "received": 1
-  },
   {
    "week": "2025-W47",
    "email": "andrikopoulos@google.com",
@@ -3029,6 +3000,90 @@
    "email": "kutylbeky@google.com",
    "given": 0,
    "received": 1
+  },
+  {
+   "week": "2026-W46",
+   "email": "bashi@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W46",
+   "email": "dbaron@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W46",
+   "email": "e.m.terhoeven@student.tudelft.nl",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W46",
+   "email": "feich@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W46",
+   "email": "helmut@januschka.com",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W46",
+   "email": "imagebuilder1837@outlook.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W46",
+   "email": "issackjohn@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W46",
+   "email": "kfarnung@microsoft.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W46",
+   "email": "mmenke@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W46",
+   "email": "mostafa.aboalkasim.offical@gmail.com",
+   "given": 1,
+   "received": 0
+  },
+  {
+   "week": "2026-W46",
+   "email": "sisidovski@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W46",
+   "email": "sorin@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W46",
+   "email": "tmathmeyer@chromium.org",
+   "given": 0,
+   "received": 1
+  },
+  {
+   "week": "2026-W46",
+   "email": "tzachbonfil@gmail.com",
+   "given": 1,
+   "received": 0
   }
  ],
  "net": {
@@ -3039,6 +3094,12 @@
      "name": "Karan Shukla",
      "score": 3.9,
      "praise": 9
+    },
+    {
+     "email": "feich@microsoft.com",
+     "name": "Fei Chen",
+     "score": 2.7,
+     "praise": 6
     },
     {
      "email": "dwayner@microsoft.com",
@@ -3053,20 +3114,14 @@
      "praise": 14
     },
     {
-     "email": "feich@microsoft.com",
-     "name": "Fei Chen",
-     "score": 2.2,
-     "praise": 5
+     "email": "aditipage@google.com",
+     "name": "Aditi Page",
+     "score": 1.7,
+     "praise": 4
     },
     {
      "email": "dev@nikwen.de",
      "name": "Niklas Wenzel",
-     "score": 2.2,
-     "praise": 5
-    },
-    {
-     "email": "aditipage@google.com",
-     "name": "Aditi Page",
      "score": 1.7,
      "praise": 4
     },
@@ -3425,6 +3480,12 @@
      "praise": 1
     },
     {
+     "email": "kfarnung@microsoft.com",
+     "name": "Kyle Farnung",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
      "email": "kyouhei.horizumi@gmail.com",
      "name": "Kyouhei Horizumi",
      "score": 0.5,
@@ -3457,6 +3518,12 @@
     {
      "email": "mkabanefredrick@gmail.com",
      "name": "Mkabane Fredrick",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "mostafa.aboalkasim.offical@gmail.com",
+     "name": "Mostafa Aboalkasim",
      "score": 0.5,
      "praise": 1
     },
@@ -3497,12 +3564,6 @@
      "praise": 1
     },
     {
-     "email": "ryandickson@google.com",
-     "name": "Ryan Dickson",
-     "score": 0.5,
-     "praise": 1
-    },
-    {
      "email": "samuelzhang3@gmail.com",
      "name": "Samuel Zhang",
      "score": 0.5,
@@ -3523,6 +3584,12 @@
     {
      "email": "troywang@google.com",
      "name": "Troy Wang",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "tzachbonfil@gmail.com",
+     "name": "Tzach Bonfil",
      "score": 0.5,
      "praise": 1
     },
@@ -3647,6 +3714,12 @@
      "praise": 1
     },
     {
+     "email": "e.m.terhoeven@student.tudelft.nl",
+     "name": "Ewout ter Hoeven",
+     "score": 0.4,
+     "praise": 1
+    },
+    {
      "email": "felipeerias@igalia.com",
      "name": "Felipe Erias",
      "score": 0.4,
@@ -3667,6 +3740,18 @@
     {
      "email": "hthadicherla@nvidia.com",
      "name": "Hrishith Thadicherla IN",
+     "score": 0.4,
+     "praise": 1
+    },
+    {
+     "email": "imagebuilder1837@outlook.com",
+     "name": "Image Builder",
+     "score": 0.4,
+     "praise": 1
+    },
+    {
+     "email": "issackjohn@microsoft.com",
+     "name": "Issack John",
      "score": 0.4,
      "praise": 1
     },
@@ -3867,12 +3952,6 @@
      "name": "Milad Farazmand",
      "score": 0.1,
      "praise": 1
-    },
-    {
-     "email": "qikaizhong@microsoft.com",
-     "name": "Qikai Zhong",
-     "score": 0.1,
-     "praise": 2
     }
    ],
    "received": [
@@ -4009,12 +4088,6 @@
      "praise": 2
     },
     {
-     "email": "tluk@chromium.org",
-     "name": "Thomas Lukaszewicz",
-     "score": 1.0,
-     "praise": 2
-    },
-    {
      "email": "ender@google.com",
      "name": "Tomasz Wiszkowski",
      "score": 1.0,
@@ -4075,8 +4148,20 @@
      "praise": 2
     },
     {
+     "email": "sorin@chromium.org",
+     "name": "Sorin Jianu",
+     "score": 0.9,
+     "praise": 2
+    },
+    {
      "email": "wangxianzhu@chromium.org",
      "name": "Xianzhu Wang",
+     "score": 0.9,
+     "praise": 2
+    },
+    {
+     "email": "mmenke@chromium.org",
+     "name": "mmenke",
      "score": 0.9,
      "praise": 2
     },
@@ -4195,6 +4280,12 @@
      "praise": 2
     },
     {
+     "email": "dbaron@chromium.org",
+     "name": "David Baron",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
      "email": "davidbienvenu@chromium.org",
      "name": "David Bienvenu",
      "score": 0.5,
@@ -4243,12 +4334,6 @@
      "praise": 1
     },
     {
-     "email": "jdeblasio@chromium.org",
-     "name": "Joe DeBlasio",
-     "score": 0.5,
-     "praise": 1
-    },
-    {
      "email": "joedow@chromium.org",
      "name": "Joe Downing",
      "score": 0.5,
@@ -4269,6 +4354,12 @@
     {
      "email": "yijunyi@google.com",
      "name": "Junyi Yi",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "bashi@chromium.org",
+     "name": "Kenichi Ishibashi",
      "score": 0.5,
      "praise": 1
     },
@@ -4357,6 +4448,12 @@
      "praise": 1
     },
     {
+     "email": "sisidovski@chromium.org",
+     "name": "Shunya Shishido",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
      "email": "zhusida@chromium.org",
      "name": "Sida Zhu",
      "score": 0.5,
@@ -4365,6 +4462,12 @@
     {
      "email": "tguilbert@chromium.org",
      "name": "Thomas Guilbert",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "tluk@chromium.org",
+     "name": "Thomas Lukaszewicz",
      "score": 0.5,
      "praise": 1
     },
@@ -4407,12 +4510,6 @@
     {
      "email": "yuqigong@google.com",
      "name": "Yuqi Gong",
-     "score": 0.5,
-     "praise": 1
-    },
-    {
-     "email": "mmenke@chromium.org",
-     "name": "mmenke",
      "score": 0.5,
      "praise": 1
     },
@@ -4591,12 +4688,6 @@
      "praise": 1
     },
     {
-     "email": "sorin@chromium.org",
-     "name": "Sorin Jianu",
-     "score": 0.4,
-     "praise": 1
-    },
-    {
      "email": "tasak@google.com",
      "name": "Takashi Sakamoto",
      "score": 0.4,
@@ -4647,12 +4738,6 @@
     {
      "email": "ireneuszszulc@google.com",
      "name": "Ireneusz Szulc",
-     "score": 0.2,
-     "praise": 1
-    },
-    {
-     "email": "tangm@microsoft.com",
-     "name": "Michael Tang",
      "score": 0.2,
      "praise": 1
     },
@@ -4715,20 +4800,8 @@
      "praise": 3
     },
     {
-     "email": "dev@nikwen.de",
-     "name": "Niklas Wenzel",
-     "score": 1.2,
-     "praise": 3
-    },
-    {
      "email": "anediaz@gmail.com",
      "name": "Ane Diaz De Tuesta",
-     "score": 1.0,
-     "praise": 2
-    },
-    {
-     "email": "qikaizhong@microsoft.com",
-     "name": "Qikai Zhong",
      "score": 1.0,
      "praise": 2
     },
@@ -4736,6 +4809,12 @@
      "email": "soosungp33@gmail.com",
      "name": "YeongHan Kim",
      "score": 0.9,
+     "praise": 2
+    },
+    {
+     "email": "dev@nikwen.de",
+     "name": "Niklas Wenzel",
+     "score": 0.7,
      "praise": 2
     },
     {
@@ -4763,8 +4842,8 @@
      "praise": 1
     },
     {
-     "email": "ryandickson@google.com",
-     "name": "Ryan Dickson",
+     "email": "qikaizhong@microsoft.com",
+     "name": "Qikai Zhong",
      "score": 0.5,
      "praise": 1
     },
@@ -4843,12 +4922,6 @@
      "praise": 2
     },
     {
-     "email": "tluk@chromium.org",
-     "name": "Thomas Lukaszewicz",
-     "score": 1.0,
-     "praise": 2
-    },
-    {
      "email": "vasilyt@chromium.org",
      "name": "Vasiliy Telezhnikov",
      "score": 1.0,
@@ -4885,12 +4958,6 @@
      "praise": 1
     },
     {
-     "email": "jdeblasio@chromium.org",
-     "name": "Joe DeBlasio",
-     "score": 0.5,
-     "praise": 1
-    },
-    {
      "email": "jonross@chromium.org",
      "name": "Jonathan Ross",
      "score": 0.5,
@@ -4905,6 +4972,12 @@
     {
      "email": "rbyers@chromium.org",
      "name": "Rick Byers",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "tluk@chromium.org",
+     "name": "Thomas Lukaszewicz",
      "score": 0.5,
      "praise": 1
     },
@@ -4979,12 +5052,6 @@
      "name": "Tom Sepez",
      "score": 0.4,
      "praise": 1
-    },
-    {
-     "email": "tangm@microsoft.com",
-     "name": "Michael Tang",
-     "score": 0.2,
-     "praise": 1
     }
    ]
   },
@@ -4993,8 +5060,8 @@
     {
      "email": "dev@nikwen.de",
      "name": "Niklas Wenzel",
-     "score": 1.2,
-     "praise": 3
+     "score": 0.7,
+     "praise": 2
     },
     {
      "email": "wangbo.0@bytedance.com",
@@ -5011,18 +5078,6 @@
     {
      "email": "kschen@google.com",
      "name": "Kevin Chen",
-     "score": 0.5,
-     "praise": 1
-    },
-    {
-     "email": "qikaizhong@microsoft.com",
-     "name": "Qikai Zhong",
-     "score": 0.5,
-     "praise": 1
-    },
-    {
-     "email": "ryandickson@google.com",
-     "name": "Ryan Dickson",
      "score": 0.5,
      "praise": 1
     },
@@ -5071,18 +5126,6 @@
      "praise": 1
     },
     {
-     "email": "jdeblasio@chromium.org",
-     "name": "Joe DeBlasio",
-     "score": 0.5,
-     "praise": 1
-    },
-    {
-     "email": "tluk@chromium.org",
-     "name": "Thomas Lukaszewicz",
-     "score": 0.5,
-     "praise": 1
-    },
-    {
      "email": "vinnypersky@google.com",
      "name": "Vinny Persky",
      "score": 0.5,
@@ -5098,12 +5141,6 @@
      "email": "tasak@google.com",
      "name": "Takashi Sakamoto",
      "score": 0.4,
-     "praise": 1
-    },
-    {
-     "email": "tangm@microsoft.com",
-     "name": "Michael Tang",
-     "score": 0.2,
      "praise": 1
     }
    ]
@@ -5297,16 +5334,16 @@
      "praise": 9
     },
     {
+     "email": "feich@microsoft.com",
+     "name": "Fei Chen",
+     "score": 2.7,
+     "praise": 6
+    },
+    {
      "email": "benjamin.beaudry@microsoft.com",
      "name": "Benjamin Beaudry",
      "score": 2.3,
      "praise": 14
-    },
-    {
-     "email": "feich@microsoft.com",
-     "name": "Fei Chen",
-     "score": 2.2,
-     "praise": 5
     },
     {
      "email": "dwayner@microsoft.com",
@@ -5627,6 +5664,12 @@
      "praise": 1
     },
     {
+     "email": "kfarnung@microsoft.com",
+     "name": "Kyle Farnung",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
      "email": "kyouhei.horizumi@gmail.com",
      "name": "Kyouhei Horizumi",
      "score": 0.5,
@@ -5659,6 +5702,12 @@
     {
      "email": "mkabanefredrick@gmail.com",
      "name": "Mkabane Fredrick",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "mostafa.aboalkasim.offical@gmail.com",
+     "name": "Mostafa Aboalkasim",
      "score": 0.5,
      "praise": 1
     },
@@ -5719,6 +5768,12 @@
     {
      "email": "troywang@google.com",
      "name": "Troy Wang",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "tzachbonfil@gmail.com",
+     "name": "Tzach Bonfil",
      "score": 0.5,
      "praise": 1
     },
@@ -5843,6 +5898,12 @@
      "praise": 1
     },
     {
+     "email": "e.m.terhoeven@student.tudelft.nl",
+     "name": "Ewout ter Hoeven",
+     "score": 0.4,
+     "praise": 1
+    },
+    {
      "email": "felipeerias@igalia.com",
      "name": "Felipe Erias",
      "score": 0.4,
@@ -5863,6 +5924,18 @@
     {
      "email": "hthadicherla@nvidia.com",
      "name": "Hrishith Thadicherla IN",
+     "score": 0.4,
+     "praise": 1
+    },
+    {
+     "email": "imagebuilder1837@outlook.com",
+     "name": "Image Builder",
+     "score": 0.4,
+     "praise": 1
+    },
+    {
+     "email": "issackjohn@microsoft.com",
+     "name": "Issack John",
      "score": 0.4,
      "praise": 1
     },
@@ -6205,8 +6278,20 @@
      "praise": 2
     },
     {
+     "email": "sorin@chromium.org",
+     "name": "Sorin Jianu",
+     "score": 0.9,
+     "praise": 2
+    },
+    {
      "email": "wangxianzhu@chromium.org",
      "name": "Xianzhu Wang",
+     "score": 0.9,
+     "praise": 2
+    },
+    {
+     "email": "mmenke@chromium.org",
+     "name": "mmenke",
      "score": 0.9,
      "praise": 2
     },
@@ -6295,6 +6380,12 @@
      "praise": 2
     },
     {
+     "email": "dbaron@chromium.org",
+     "name": "David Baron",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
      "email": "davidbienvenu@chromium.org",
      "name": "David Bienvenu",
      "score": 0.5,
@@ -6375,6 +6466,12 @@
     {
      "email": "yijunyi@google.com",
      "name": "Junyi Yi",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "bashi@chromium.org",
+     "name": "Kenichi Ishibashi",
      "score": 0.5,
      "praise": 1
     },
@@ -6463,6 +6560,12 @@
      "praise": 1
     },
     {
+     "email": "sisidovski@chromium.org",
+     "name": "Shunya Shishido",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
      "email": "zhusida@chromium.org",
      "name": "Sida Zhu",
      "score": 0.5,
@@ -6501,12 +6604,6 @@
     {
      "email": "yuqigong@google.com",
      "name": "Yuqi Gong",
-     "score": 0.5,
-     "praise": 1
-    },
-    {
-     "email": "mmenke@chromium.org",
-     "name": "mmenke",
      "score": 0.5,
      "praise": 1
     },
@@ -6681,12 +6778,6 @@
     {
      "email": "shivanisha@chromium.org",
      "name": "Shivani Sharma",
-     "score": 0.4,
-     "praise": 1
-    },
-    {
-     "email": "sorin@chromium.org",
-     "name": "Sorin Jianu",
      "score": 0.4,
      "praise": 1
     },
@@ -8789,17 +8880,101 @@
   "2026-11": {
    "given": [
     {
+     "email": "feich@microsoft.com",
+     "name": "Fei Chen",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
      "email": "jkudzia@google.com",
      "name": "Jakub Kudzia",
      "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "kfarnung@microsoft.com",
+     "name": "Kyle Farnung",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "mostafa.aboalkasim.offical@gmail.com",
+     "name": "Mostafa Aboalkasim",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "tzachbonfil@gmail.com",
+     "name": "Tzach Bonfil",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "e.m.terhoeven@student.tudelft.nl",
+     "name": "Ewout ter Hoeven",
+     "score": 0.4,
+     "praise": 1
+    },
+    {
+     "email": "imagebuilder1837@outlook.com",
+     "name": "Image Builder",
+     "score": 0.4,
+     "praise": 1
+    },
+    {
+     "email": "issackjohn@microsoft.com",
+     "name": "Issack John",
+     "score": 0.4,
      "praise": 1
     }
    ],
    "received": [
     {
+     "email": "dbaron@chromium.org",
+     "name": "David Baron",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "bashi@chromium.org",
+     "name": "Kenichi Ishibashi",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "sisidovski@chromium.org",
+     "name": "Shunya Shishido",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "sorin@chromium.org",
+     "name": "Sorin Jianu",
+     "score": 0.5,
+     "praise": 1
+    },
+    {
      "email": "kutylbeky@google.com",
      "name": "Yerassyl Kutylbek",
      "score": 0.5,
+     "praise": 1
+    },
+    {
+     "email": "helmut@januschka.com",
+     "name": "Helmut Januschka",
+     "score": 0.4,
+     "praise": 1
+    },
+    {
+     "email": "tmathmeyer@chromium.org",
+     "name": "Ted (Chromium) Meyer",
+     "score": 0.4,
+     "praise": 1
+    },
+    {
+     "email": "mmenke@chromium.org",
+     "name": "mmenke",
+     "score": 0.4,
      "praise": 1
     }
    ]

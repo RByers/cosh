@@ -1,9 +1,9 @@
 {
- "generated_at": "2026-11-16T11:58:56Z",
+ "generated_at": "2026-11-16T14:09:00Z",
  "prompt": "v3",
  "weeks": [
-  "2025-W46",
-  "2026-W45"
+  "2025-W47",
+  "2026-W46"
  ],
  "authors": "committers",
  "praise_min": 0.5,
@@ -245,11 +245,6 @@
      "month": "2025-12"
     },
     {
-     "text": "Please don't arbitrarily resolve this thread. It tracks an action item for the CL author. Just marking it as done won't advance the CL.",
-     "score": -0.6,
-     "month": "2025-11"
-    },
-    {
      "text": "No, because we signal it on line 301, which is run (for the first time) as soon as the command is started.\n\nIt's confusing, I just spent 20 minutes trying to untangle this to figure out if there was a UAF somewhere.",
      "score": -0.6,
      "month": "2025-11"
@@ -327,22 +322,6 @@
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7152542/comment/cb7736a5_90b7b343/"
     },
     {
-     "text": "Thank you for the split! it makes the change much more readable and easy to follow 👍",
-     "score": 0.5,
-     "date": "2025-11-12",
-     "writer": "Menghan Yang",
-     "recipient": "Anton Goncharenko",
-     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7131542/comment/baaad39c_9af60645/"
-    },
-    {
-     "text": "That works, and helps keep the metrics logic more self-contained. thanks for the suggestion! implemented",
-     "score": 0.5,
-     "date": "2025-11-11",
-     "writer": "Sana Akbani",
-     "recipient": "Bryant Chandler",
-     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7125305/comment/c15991d9_a359b5b9/"
-    },
-    {
      "text": "Yay 😊",
      "score": 0.5,
      "date": "2025-11-26",
@@ -351,23 +330,34 @@
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7138558/comment/3bdf3dce_b17c5b81/"
     },
     {
-     "text": "Great - I like this simplification very much.\n\n\nI am not an expert, but IIUC `RUSTC_BOOTSTRAP` is required when building the compiler itself.  And therefore I think/hope that it is likely to remain supported.",
+     "text": "Ah, that makes perfect sense. Thank you for the detailed explanation. I changed it to `const raw_ptr<ScrollUpdateEventMetrics>` as suggested.",
      "score": 0.5,
-     "date": "2025-11-13",
-     "writer": "Łukasz Anforowicz",
-     "recipient": "Milad Farazmand",
-     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7153321/comment/5197b0cd_683c2c84/"
+     "date": "2025-11-28",
+     "writer": "Petr Cermak",
+     "recipient": "Kartar Singh",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7203978/comment/7dc10fff_77ac24e2/"
+    },
+    {
+     "text": "excellent chain of refactoring and simplification CLs! left a couple of drive-by nits.",
+     "score": 0.5,
+     "date": "2025-11-26",
+     "writer": "Moe Ahmadi",
+     "recipient": "manuk hovanesian",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7203934/comment/d42d2779_657cc043/"
+    },
+    {
+     "text": "thanks for your suggestion! that is much cleaner and easier solution than my original approach and according to [log](https://paste.googleplex.com/6582577139941376), it works as expected.",
+     "score": 0.5,
+     "date": "2025-11-21",
+     "writer": "ben chin",
+     "recipient": "Bo Liu",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/7135348/comment/1d53b0cd_557493df/"
     }
    ],
    "grumpy": [
     {
      "text": "Remove \"All\", and move up to after the class. I've pointed this out at least 3 times now, please pay attention.",
      "score": -0.7,
-     "month": "2025-11"
-    },
-    {
-     "text": "Please don't arbitrarily resolve this thread. It tracks an action item for the CL author. Just marking it as done won't advance the CL.",
-     "score": -0.6,
      "month": "2025-11"
     },
     {
@@ -1892,6 +1882,22 @@
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8737281/comment/83a192ee_724815a4/"
     },
     {
+     "text": "Nice! Thanks for finding all these edge case coverage!",
+     "score": 0.5,
+     "date": "2026-11-13",
+     "writer": "Luke Deng",
+     "recipient": "Dibyajyoti Pal",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8804780/comment/5ae2448b_dff14ec5/"
+    },
+    {
+     "text": "Thanks for the detailed updates and the trace numbers! I think those concerns are resolved. Left comments for other concerns.",
+     "score": 0.5,
+     "date": "2026-11-13",
+     "writer": "Rakina Zata Amni",
+     "recipient": "Jiacheng Guo",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8666780/comment/6b8bfef7_d1e24e00/"
+    },
+    {
      "text": "yea generlaly agree - thanks for tracking it down more!",
      "score": 0.5,
      "date": "2026-11-04",
@@ -1900,36 +1906,20 @@
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8701441/comment/50fcf1b5_5d9f7963/"
     },
     {
+     "text": "The screen recording looks awesome, thanks!",
+     "score": 0.5,
+     "date": "2026-11-09",
+     "writer": "Bofeng Chen",
+     "recipient": "Dhruv Kathpalia",
+     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8747945/comment/24882d48_e7155709/"
+    },
+    {
      "text": "Amazing! Thanks for the work you're doing here 😊\nnit: do you have an android impl design doc you could add here?",
      "score": 0.5,
      "date": "2026-11-05",
      "writer": "Alexander Kyereboah",
      "recipient": "Rob Pitkin",
      "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8526477/comment/69cd4af9_b19fc88a/"
-    },
-    {
-     "text": "Thanks!\n\nYeah, this unlocks a bunch of opportunities for batching+AutoReset, using Public Transit in these tests, and being more thorough in testing cases like CCT with lower effort :)\n\nYou got close to finishing these while batching, I'm just finishing the job :D",
-     "score": 0.5,
-     "date": "2026-11-02",
-     "writer": "Henrique Nakashima",
-     "recipient": "Calder Kitagawa",
-     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8703187/comment/41497ea7_222e98c3/"
-    },
-    {
-     "text": "Good catch, and thanks for adding the unit tests for `kOther` and `kDeeplink`!",
-     "score": 0.5,
-     "date": "2026-11-05",
-     "writer": "Jérôme Lebel",
-     "recipient": "Menghan Yang",
-     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8630934/comment/1bc3f5e2_d4b57168/"
-    },
-    {
-     "text": "Thanks for finding and fixing the gap between Android and desktop platforms. Approving based on steimel@'s LGTM (who is the expert in PiP here) modulo a few minor asks.",
-     "score": 0.5,
-     "date": "2026-11-04",
-     "writer": "Mustaq Ahmed",
-     "recipient": "Phil Yan",
-     "url": "https://chromium-review.googlesource.com/c/chromium/src/+/8711938/comment/1af46305_3a06def2/"
     }
    ],
    "grumpy": [

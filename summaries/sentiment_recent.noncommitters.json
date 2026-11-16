@@ -1,9 +1,9 @@
 {
- "generated_at": "2026-11-16T11:59:17Z",
+ "generated_at": "2026-11-16T14:09:42Z",
  "prompt": "v3",
  "weeks": [
-  "2025-W46",
-  "2026-W45"
+  "2025-W47",
+  "2026-W46"
  ],
  "authors": "noncommitters",
  "thresholds": {
@@ -13,14 +13,6 @@
  "min_counterparts": 6,
  "missing": 0,
  "weekly": [
-  {
-   "week": "2025-W46",
-   "n": 266,
-   "mean": 0.0256,
-   "glowing": 0.0113,
-   "angry": 0.0188,
-   "ai": 0
-  },
   {
    "week": "2025-W47",
    "n": 364,
@@ -428,19 +420,27 @@
    "glowing": 0.0017,
    "angry": 0.0102,
    "ai": 0
+  },
+  {
+   "week": "2026-W46",
+   "n": 571,
+   "mean": 0.0214,
+   "glowing": 0.0158,
+   "angry": 0.007,
+   "ai": 2
   }
  ],
  "monthly": [
   {
    "month": "2025-11",
    "weeks": [
-    "2025-W46",
+    "2025-W47",
     "2025-W48"
    ],
-   "n": 908,
-   "mean": 0.027,
-   "glowing": 0.0121,
-   "angry": 0.0099,
+   "n": 642,
+   "mean": 0.0276,
+   "glowing": 0.0125,
+   "angry": 0.0062,
    "ai": 5
   },
   {
@@ -579,28 +579,28 @@
    "month": "2026-11",
    "weeks": [
     "2026-W45",
-    "2026-W45"
+    "2026-W46"
    ],
-   "n": 590,
-   "mean": 0.0142,
-   "glowing": 0.0017,
-   "angry": 0.0102,
-   "ai": 0
+   "n": 1161,
+   "mean": 0.0177,
+   "glowing": 0.0086,
+   "angry": 0.0086,
+   "ai": 2
   }
  ],
  "periods": {
   "all": {
    "weeks": [
-    "2025-W46",
-    "2026-W45"
+    "2025-W47",
+    "2026-W46"
    ],
-   "n_trivial": 201476,
+   "n_trivial": 203132,
    "total": {
-    "n": 20797,
-    "mean": 0.0226,
-    "glowing": 0.011,
-    "angry": 0.0096,
-    "ai": 30
+    "n": 21102,
+    "mean": 0.0225,
+    "glowing": 0.0111,
+    "angry": 0.0094,
+    "ai": 32
    },
    "dist": [
     [
@@ -617,7 +617,7 @@
     ],
     [
      -0.7,
-     7
+     6
     ],
     [
      -0.6,
@@ -625,15 +625,15 @@
     ],
     [
      -0.5,
-     15
+     14
     ],
     [
      -0.4,
-     17
+     19
     ],
     [
      -0.3,
-     127
+     126
     ],
     [
      -0.2,
@@ -641,31 +641,31 @@
     ],
     [
      -0.1,
-     409
+     412
     ],
     [
      0.0,
-     16801
+     17089
     ],
     [
      0.1,
-     1606
+     1610
     ],
     [
      0.2,
-     422
+     416
     ],
     [
      0.3,
-     942
+     953
     ],
     [
      0.4,
-     98
+     103
     ],
     [
      0.5,
-     129
+     130
     ],
     [
      0.6,
@@ -735,8 +735,8 @@
       "counterparts": 10
      },
      {
-      "name": "Ramin Halavati",
-      "email": "rhalavati@chromium.org",
+      "name": "Mitsuru Oshima",
+      "email": "oshima@chromium.org",
       "glowing": 1,
       "happy": 1,
       "counterparts": 6
@@ -762,7 +762,7 @@
       "email": "dfried@chromium.org",
       "glowing": 4,
       "happy": 4,
-      "counterparts": 18
+      "counterparts": 19
      },
      {
       "name": "Mike Wittman",
@@ -783,7 +783,7 @@
       "email": "grt@chromium.org",
       "glowing": 3,
       "happy": 3,
-      "counterparts": 31
+      "counterparts": 29
      },
      {
       "name": "Hidehiko Abe",
@@ -804,14 +804,14 @@
       "email": "toyoshim@chromium.org",
       "glowing": 3,
       "happy": 3,
-      "counterparts": 14
+      "counterparts": 15
      },
      {
       "name": "Andrea Orru",
       "email": "andreaorru@chromium.org",
       "glowing": 3,
       "happy": 2,
-      "counterparts": 10
+      "counterparts": 11
      },
      {
       "name": "Christoph Schwering",
@@ -839,21 +839,21 @@
       "email": "dalecurtis@chromium.org",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 28
+      "counterparts": 29
      },
      {
       "name": "Darryl James",
       "email": "dljames@chromium.org",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 20
+      "counterparts": 19
      },
      {
       "name": "Francois Pierre Doray",
       "email": "fdoray@chromium.org",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 8
+      "counterparts": 7
      },
      {
       "name": "Kelvin Jiang",
@@ -874,7 +874,7 @@
       "email": "masonf@chromium.org",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 20
+      "counterparts": 21
      },
      {
       "name": "Mike Wasserman",
@@ -884,11 +884,18 @@
       "counterparts": 18
      },
      {
+      "name": "mmenke",
+      "email": "mmenke@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 9
+     },
+     {
       "name": "Dibyajyoti Pal",
       "email": "dibyapal@chromium.org",
       "glowing": 2,
       "happy": 1,
-      "counterparts": 6
+      "counterparts": 7
      },
      {
       "name": "Mitsuru Oshima",
@@ -912,11 +919,11 @@
       "counterparts": 7
      },
      {
-      "name": "Thomas Lukaszewicz",
-      "email": "tluk@chromium.org",
+      "name": "Sorin Jianu",
+      "email": "sorin@chromium.org",
       "glowing": 2,
       "happy": 1,
-      "counterparts": 25
+      "counterparts": 9
      },
      {
       "name": "Vasiliy Telezhnikov",
@@ -972,7 +979,7 @@
       "email": "cfredric@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 6
+      "counterparts": 7
      },
      {
       "name": "Colin Blundell",
@@ -986,14 +993,21 @@
       "email": "daniec@microsoft.com",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 8
+      "counterparts": 9
+     },
+     {
+      "name": "David Baron",
+      "email": "dbaron@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 12
      },
      {
       "name": "David Tseng",
       "email": "dtseng@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 10
+      "counterparts": 11
      },
      {
       "name": "Devlin Cronin",
@@ -1007,14 +1021,14 @@
       "email": "drott@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 10
+      "counterparts": 9
      },
      {
       "name": "Fredrik Söderquist",
       "email": "fs@opera.com",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 15
+      "counterparts": 16
      },
      {
       "name": "Gabriel Charette",
@@ -1024,11 +1038,18 @@
       "counterparts": 10
      },
      {
+      "name": "Helmut Januschka",
+      "email": "helmut@januschka.com",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     },
+     {
       "name": "Jacques Newman",
       "email": "janewman@microsoft.com",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 10
+      "counterparts": 9
      },
      {
       "name": "Joey Arhar",
@@ -1045,6 +1066,13 @@
       "counterparts": 9
      },
      {
+      "name": "Kenichi Ishibashi",
+      "email": "bashi@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     },
+     {
       "name": "Kent Tamura",
       "email": "tkent@chromium.org",
       "glowing": 1,
@@ -1056,7 +1084,7 @@
       "email": "kerenzhu@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 19
+      "counterparts": 17
      },
      {
       "name": "Koji Ishii",
@@ -1070,14 +1098,14 @@
       "email": "fangzhoug@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 7
+      "counterparts": 9
      },
      {
       "name": "Lei Zhang",
       "email": "thestig@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 38
+      "counterparts": 40
      },
      {
       "name": "Marc Treib",
@@ -1126,7 +1154,7 @@
       "email": "olka@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 9
+      "counterparts": 8
      },
      {
       "name": "Rafael Cintron",
@@ -1143,32 +1171,25 @@
       "counterparts": 13
      },
      {
-      "name": "Sorin Jianu",
-      "email": "sorin@chromium.org",
+      "name": "Thomas Guilbert",
+      "email": "tguilbert@chromium.org",
       "glowing": 1,
       "happy": 1,
       "counterparts": 9
      },
      {
-      "name": "Thomas Guilbert",
-      "email": "tguilbert@chromium.org",
+      "name": "Thomas Lukaszewicz",
+      "email": "tluk@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 8
+      "counterparts": 25
      },
      {
       "name": "Tom Sepez",
       "email": "tsepez@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 10
-     },
-     {
-      "name": "mmenke",
-      "email": "mmenke@chromium.org",
-      "glowing": 1,
-      "happy": 1,
-      "counterparts": 8
+      "counterparts": 11
      },
      {
       "name": "Łukasz Anforowicz",
@@ -1223,6 +1244,12 @@
      "role": "author"
     },
     {
+     "text": "Sorry for the AI reply. It took too much liberty",
+     "score": 0.0,
+     "month": "2026-11",
+     "role": "author"
+    },
+    {
      "text": "Lines removes per suggestion above. For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
      "score": 0.0,
      "month": "2026-09",
@@ -1248,21 +1275,21 @@
     }
    ],
    "ai_left_out": {
-    "screened": 15,
+    "screened": 16,
     "long_or_linked": 4
    }
   },
   "2025": {
    "weeks": [
-    "2025-W46",
+    "2025-W47",
     "2025-W52"
    ],
-   "n_trivial": 20610,
+   "n_trivial": 17303,
    "total": {
-    "n": 1889,
-    "mean": 0.0273,
-    "glowing": 0.0148,
-    "angry": 0.0106,
+    "n": 1623,
+    "mean": 0.0276,
+    "glowing": 0.0154,
+    "angry": 0.0092,
     "ai": 5
    },
    "dist": [
@@ -1272,14 +1299,6 @@
     ],
     [
      -0.7,
-     2
-    ],
-    [
-     -0.6,
-     1
-    ],
-    [
-     -0.5,
      1
     ],
     [
@@ -1288,31 +1307,31 @@
     ],
     [
      -0.3,
-     12
+     10
     ],
     [
      -0.2,
-     16
+     12
     ],
     [
      -0.1,
-     41
+     38
     ],
     [
      0.0,
-     1470
+     1267
     ],
     [
      0.1,
-     173
+     151
     ],
     [
      0.2,
-     54
+     42
     ],
     [
      0.3,
-     87
+     73
     ],
     [
      0.4,
@@ -1320,7 +1339,7 @@
     ],
     [
      0.5,
-     18
+     15
     ]
    ],
    "happy": {
@@ -1350,61 +1369,49 @@
   },
   "2025-11": {
    "weeks": [
-    "2025-W46",
+    "2025-W47",
     "2025-W48"
    ],
-   "n_trivial": 9496,
+   "n_trivial": 6189,
    "total": {
-    "n": 908,
-    "mean": 0.027,
-    "glowing": 0.0121,
-    "angry": 0.0099,
+    "n": 642,
+    "mean": 0.0276,
+    "glowing": 0.0125,
+    "angry": 0.0062,
     "ai": 5
    },
    "dist": [
-    [
-     -0.7,
-     1
-    ],
-    [
-     -0.6,
-     1
-    ],
-    [
-     -0.5,
-     1
-    ],
     [
      -0.4,
      1
     ],
     [
      -0.3,
-     5
+     3
     ],
     [
      -0.2,
-     12
+     8
     ],
     [
      -0.1,
-     18
+     15
     ],
     [
      0.0,
-     696
+     493
     ],
     [
      0.1,
-     93
+     71
     ],
     [
      0.2,
-     29
+     17
     ],
     [
      0.3,
-     40
+     26
     ],
     [
      0.4,
@@ -1412,7 +1419,7 @@
     ],
     [
      0.5,
-     9
+     6
     ]
    ],
    "happy": {
@@ -1508,15 +1515,15 @@
   "2026": {
    "weeks": [
     "2026-W01",
-    "2026-W45"
+    "2026-W46"
    ],
-   "n_trivial": 180866,
+   "n_trivial": 185829,
    "total": {
-    "n": 18908,
+    "n": 19479,
     "mean": 0.0221,
-    "glowing": 0.0106,
-    "angry": 0.0095,
-    "ai": 25
+    "glowing": 0.0108,
+    "angry": 0.0094,
+    "ai": 27
    },
    "dist": [
     [
@@ -1537,7 +1544,7 @@
     ],
     [
      -0.6,
-     14
+     15
     ],
     [
      -0.5,
@@ -1545,43 +1552,43 @@
     ],
     [
      -0.4,
-     14
+     16
     ],
     [
      -0.3,
-     115
+     116
     ],
     [
      -0.2,
-     172
+     176
     ],
     [
      -0.1,
-     368
+     374
     ],
     [
      0.0,
-     15331
+     15822
     ],
     [
      0.1,
-     1433
+     1459
     ],
     [
      0.2,
-     368
+     374
     ],
     [
      0.3,
-     855
+     880
     ],
     [
      0.4,
-     88
+     93
     ],
     [
      0.5,
-     111
+     115
     ],
     [
      0.6,
@@ -1642,6 +1649,13 @@
       "glowing": 1,
       "happy": 1,
       "counterparts": 9
+     },
+     {
+      "name": "Mitsuru Oshima",
+      "email": "oshima@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
      }
     ],
     "reviewers": [
@@ -1657,7 +1671,7 @@
       "email": "dfried@chromium.org",
       "glowing": 4,
       "happy": 4,
-      "counterparts": 17
+      "counterparts": 18
      },
      {
       "name": "Mike Wittman",
@@ -1678,14 +1692,14 @@
       "email": "toyoshim@chromium.org",
       "glowing": 3,
       "happy": 3,
-      "counterparts": 14
+      "counterparts": 15
      },
      {
       "name": "Andrea Orru",
       "email": "andreaorru@chromium.org",
       "glowing": 3,
       "happy": 2,
-      "counterparts": 10
+      "counterparts": 11
      },
      {
       "name": "Christoph Schwering",
@@ -1706,14 +1720,14 @@
       "email": "creis@chromium.org",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 6
+      "counterparts": 7
      },
      {
       "name": "Dale Curtis",
       "email": "dalecurtis@chromium.org",
       "glowing": 2,
       "happy": 2,
-      "counterparts": 26
+      "counterparts": 27
      },
      {
       "name": "Darryl James",
@@ -1758,6 +1772,13 @@
       "counterparts": 8
      },
      {
+      "name": "mmenke",
+      "email": "mmenke@chromium.org",
+      "glowing": 2,
+      "happy": 2,
+      "counterparts": 8
+     },
+     {
       "name": "Mitsuru Oshima",
       "email": "oshima@chromium.org",
       "glowing": 2,
@@ -1770,6 +1791,13 @@
       "glowing": 2,
       "happy": 1,
       "counterparts": 6
+     },
+     {
+      "name": "Sorin Jianu",
+      "email": "sorin@chromium.org",
+      "glowing": 2,
+      "happy": 1,
+      "counterparts": 8
      },
      {
       "name": "Alexei Svitkine",
@@ -1793,6 +1821,13 @@
       "counterparts": 13
      },
      {
+      "name": "Chris Fredrickson",
+      "email": "cfredric@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 6
+     },
+     {
       "name": "Colin Blundell",
       "email": "blundell@chromium.org",
       "glowing": 1,
@@ -1804,14 +1839,21 @@
       "email": "daniec@microsoft.com",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 8
+      "counterparts": 9
+     },
+     {
+      "name": "David Baron",
+      "email": "dbaron@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 11
      },
      {
       "name": "David Tseng",
       "email": "dtseng@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 10
+      "counterparts": 11
      },
      {
       "name": "Devlin Cronin",
@@ -1825,7 +1867,7 @@
       "email": "dibyapal@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 6
+      "counterparts": 7
      },
      {
       "name": "Dominik Röttsches",
@@ -1839,11 +1881,18 @@
       "email": "fs@opera.com",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 15
+      "counterparts": 16
      },
      {
       "name": "Gabriel Charette",
       "email": "gab@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     },
+     {
+      "name": "Helmut Januschka",
+      "email": "helmut@januschka.com",
       "glowing": 1,
       "happy": 1,
       "counterparts": 9
@@ -1863,6 +1912,13 @@
       "counterparts": 12
      },
      {
+      "name": "Kenichi Ishibashi",
+      "email": "bashi@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 9
+     },
+     {
       "name": "Kent Tamura",
       "email": "tkent@chromium.org",
       "glowing": 1,
@@ -1877,11 +1933,18 @@
       "counterparts": 15
      },
      {
+      "name": "Kramer Ge",
+      "email": "fangzhoug@chromium.org",
+      "glowing": 1,
+      "happy": 1,
+      "counterparts": 7
+     },
+     {
       "name": "Lei Zhang",
       "email": "thestig@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 37
+      "counterparts": 39
      },
      {
       "name": "Marc Treib",
@@ -1902,7 +1965,7 @@
       "email": "masonf@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 19
+      "counterparts": 20
      },
      {
       "name": "Michael Thiessen",
@@ -1937,7 +2000,7 @@
       "email": "ntfschr@chromium.org",
       "glowing": 1,
       "happy": 1,
-      "counterparts": 7
+      "counterparts": 8
      },
      {
       "name": "Olga Sharonova",
@@ -1954,22 +2017,8 @@
       "counterparts": 12
      },
      {
-      "name": "Sorin Jianu",
-      "email": "sorin@chromium.org",
-      "glowing": 1,
-      "happy": 1,
-      "counterparts": 8
-     },
-     {
       "name": "Thomas Guilbert",
       "email": "tguilbert@chromium.org",
-      "glowing": 1,
-      "happy": 1,
-      "counterparts": 6
-     },
-     {
-      "name": "mmenke",
-      "email": "mmenke@chromium.org",
       "glowing": 1,
       "happy": 1,
       "counterparts": 7
@@ -2021,6 +2070,12 @@
      "role": "author"
     },
     {
+     "text": "Sorry for the AI reply. It took too much liberty",
+     "score": 0.0,
+     "month": "2026-11",
+     "role": "author"
+    },
+    {
      "text": "Lines removes per suggestion above. For context, I thought these were needed due to the AI review agent kept suggesting to mention the MOJO rules.",
      "score": 0.0,
      "month": "2026-09",
@@ -2046,7 +2101,7 @@
     }
    ],
    "ai_left_out": {
-    "screened": 13,
+    "screened": 14,
     "long_or_linked": 2
    }
   },
@@ -2961,20 +3016,20 @@
   "2026-11": {
    "weeks": [
     "2026-W45",
-    "2026-W45"
+    "2026-W46"
    ],
-   "n_trivial": 5021,
+   "n_trivial": 9984,
    "total": {
-    "n": 590,
-    "mean": 0.0142,
-    "glowing": 0.0017,
-    "angry": 0.0102,
-    "ai": 0
+    "n": 1161,
+    "mean": 0.0177,
+    "glowing": 0.0086,
+    "angry": 0.0086,
+    "ai": 2
    },
    "dist": [
     [
      -0.6,
-     1
+     2
     ],
     [
      -0.5,
@@ -2982,48 +3037,59 @@
     ],
     [
      -0.4,
-     1
-    ],
-    [
-     -0.3,
      3
     ],
     [
+     -0.3,
+     4
+    ],
+    [
      -0.2,
-     1
+     5
     ],
     [
      -0.1,
-     13
+     19
     ],
     [
      0.0,
-     502
+     993
     ],
     [
      0.1,
-     38
+     64
     ],
     [
      0.2,
-     7
+     13
     ],
     [
      0.3,
-     22
+     47
+    ],
+    [
+     0.4,
+     5
     ],
     [
      0.5,
-     1
+     5
     ]
    ],
    "happy": {
     "authors": [],
     "reviewers": []
    },
-   "ai": [],
+   "ai": [
+    {
+     "text": "Sorry for the AI reply. It took too much liberty",
+     "score": 0.0,
+     "month": "2026-11",
+     "role": "author"
+    }
+   ],
    "ai_left_out": {
-    "screened": 0,
+    "screened": 1,
     "long_or_linked": 0
    }
   }

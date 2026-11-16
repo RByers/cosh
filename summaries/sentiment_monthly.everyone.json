@@ -1,12 +1,12 @@
 {
- "generated_at": "2026-11-16T11:58:49Z",
+ "generated_at": "2026-11-16T14:08:49Z",
  "prompt": "v3",
  "model": "haiku",
  "sample": "sample-5pct",
  "rate": 0.05,
  "full_weeks": [
-  "2025-W46",
-  "2026-W45"
+  "2025-W47",
+  "2026-W46"
  ],
  "authors": "everyone",
  "thresholds": {
@@ -2061,7 +2061,7 @@
  "missing": 0,
  "data_span": {
   "first": "2023-07-01",
-  "last": "2026-11-08",
+  "last": "2026-11-15",
   "sources": [
    "gerrit"
   ]
