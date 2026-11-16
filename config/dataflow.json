@@ -972,7 +972,7 @@
         {
           "name": "work_windows",
           "rows": 74116,
-          "purpose": "Each person's working window per quarter: the 8 hours of the day (UTC) holding most of their comments, votes and uploads (cosh/work_hours.py). Rebuilt whole with cl_reviewers.",
+          "purpose": "Each person's working window per quarter: the 8 hours of the day (UTC) holding most of their comments, votes and uploads (cosh/work_hours.py). Rewritten every run.",
           "columns": {
             "account_id": "Gerrit account id.",
             "quarter": "The quarter, e.g. 2026Q3.",
@@ -981,6 +981,24 @@
             "events": "Comments, votes and uploads in the quarter."
           },
           "withheld": "Each row is one person's working hours, which the site publishes only as aggregates."
+        },
+        {
+          "name": "reviewers_done",
+          "rows": 1159236,
+          "purpose": "What each CL's cl_reviewers and cl_turns rows were made from: a CL is redone when this changes.",
+          "columns": {
+            "change_number": "Gerrit CL number.",
+            "owner": "Gerrit account id of the CL's owner, to find CLs whose owner's working window moved.",
+            "inputs": "A 64-bit hash of derive's fingerprint of the CL and its meta ref's tip."
+          }
+        },
+        {
+          "name": "reviewers_bots",
+          "rows": 834,
+          "purpose": "The accounts left out as bots at the last run: CLs of an account that became or stopped being a bot are redone.",
+          "columns": {
+            "account_id": "Gerrit account id."
+          }
         }
       ]
     },
@@ -1983,10 +2001,10 @@
       ],
       "network": false,
       "lock": null,
-      "incremental": "Reads CLs not yet read and CLs whose meta ref's tip moved since (replacing their rows), and listings whose body is new; CLs without a ref are looked for again next time. The walk and the listing stages each keep a code fingerprint in meta (cosh/codefp.py): when one changes, that stage's rows are deleted and it reads everything again (walk about 35 min, listings about 4 min). The per-reviewer table is rebuilt whole (about 1 min).",
-      "duration": "35.5 min (330 CLs/s, sharing the box with another git walk) for 716k CLs from empty, plus 4 min for 26,769 listings from empty; about 1.5 min when nothing is new (the per-reviewer table and working windows: 64 s and 146 MB on a busy box, 2026-11-15, reading CLs 20,000 at a time; of that, finding addresses for accounts with none about 15 s and the windows' activity counts about 10 s)",
+      "incremental": "Reads CLs not yet read and CLs whose meta ref's tip moved since (replacing their rows), and listings whose body is new; CLs without a ref are looked for again next time. The walk and the listing stages each keep a code fingerprint in meta (cosh/codefp.py): when one changes, that stage's rows are deleted and it reads everything again (walk about 35 min, listings about 4 min). The reviewers stage redoes a CL only when derive's fingerprint of it or its meta ref's tip changed (reviewers_done), a working window its turns used moved, or one of its accounts became or stopped being a bot; its own code fingerprint, or the walk's or listing's, redoes every CL (about 2 min).",
+      "duration": "35.5 min (330 CLs/s, sharing the box with another git walk) for 716k CLs from empty, plus 4 min for 26,769 listings from empty; the reviewers stage 22 s and 140 MB for a week's worth of CLs (30,000 redone) and 110-130 s and 160 MB redoing all 1.16M, on a busy box on 2026-11-15, reading CLs 20,000 at a time; of that, finding addresses for accounts with none about 15 s and the windows' activity counts about 10 s",
       "token_cost": null,
-      "cost_source": "data/private/scratch/timeline/walk.log; the listings and reviewers on 2026-11-14",
+      "cost_source": "data/private/scratch/timeline/walk.log; the listings on 2026-11-14; reviewers on 2026-11-15 (data/private/scratch/reviewers-incremental)",
       "refresh": "routine",
       "run": "python3 -m cosh.review_timeline",
       "notes": "Was the Review Balance stage `cosh.balance timeline` until 2026-11-14; Review Load reads it too, so it is its own step and the balance stages consume it. $COSH_REVIEW_TIMELINE points it and its readers at another file. Accounts Gerrit shows with no address count as reviewers when their votes or CLs tie them to a person's address (people.exact_identities, which reads commits.sqlite)."

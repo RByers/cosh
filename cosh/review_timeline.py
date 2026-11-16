@@ -34,6 +34,7 @@ $COSH_REVIEW_TIMELINE points the step and its readers at another file.
 """
 
 import argparse
+import hashlib
 import json
 import os
 import re
@@ -102,8 +103,7 @@ CREATE TABLE IF NOT EXISTS meta (k TEXT PRIMARY KEY, v TEXT) STRICT;
 """
 
 REVIEWERS_SCHEMA = """
-DROP TABLE IF EXISTS cl_reviewers;
-CREATE TABLE cl_reviewers (       -- each human other than the owner who was asked to review a CL or answered
+CREATE TABLE IF NOT EXISTS cl_reviewers (       -- each human other than the owner who was asked to review a CL or answered
   change_number       INTEGER NOT NULL,
   account_id          INTEGER NOT NULL,
   asked_at            INTEGER,    -- first time in the attention set; NULL if never (or before it existed)
@@ -112,8 +112,7 @@ CREATE TABLE cl_reviewers (       -- each human other than the owner who was ask
   attention_weekday_h REAL,       -- the same, Saturdays and Sundays (UTC) left out
   PRIMARY KEY (change_number, account_id)
 ) STRICT, WITHOUT ROWID;
-DROP TABLE IF EXISTS cl_turns;
-CREATE TABLE cl_turns (           -- each turn of those reviewers in the attention set (overlapping intervals merged)
+CREATE TABLE IF NOT EXISTS cl_turns (           -- each turn of those reviewers in the attention set (overlapping intervals merged)
   change_number INTEGER NOT NULL, -- that ended before the CL closed: one still open then is left out (the CL
   account_id    INTEGER NOT NULL, -- didn't wait on it)
   start_at      INTEGER NOT NULL,
@@ -123,8 +122,7 @@ CREATE TABLE cl_turns (           -- each turn of those reviewers in the attenti
   owner_work_h  REAL,             -- the same in the CL owner's window: the wait as the owner saw it
   PRIMARY KEY (change_number, account_id, start_at)
 ) STRICT, WITHOUT ROWID;
-DROP TABLE IF EXISTS work_windows;
-CREATE TABLE work_windows (       -- each person's working window per quarter (cosh/work_hours.py)
+CREATE TABLE IF NOT EXISTS work_windows (       -- each person's working window per quarter (cosh/work_hours.py)
   account_id INTEGER NOT NULL,
   quarter    TEXT    NOT NULL,    -- '2026Q3'
   start_h    INTEGER NOT NULL,    -- the window's first hour, UTC (8 hours, wrapping midnight)
@@ -132,6 +130,14 @@ CREATE TABLE work_windows (       -- each person's working window per quarter (c
   events     INTEGER NOT NULL,    -- comments, votes and uploads in the quarter
   PRIMARY KEY (account_id, quarter)
 ) STRICT, WITHOUT ROWID;
+-- What each CL's rows above were made from: a CL is redone when its key changes (stage_reviewers).
+CREATE TABLE IF NOT EXISTS reviewers_done (
+  change_number INTEGER PRIMARY KEY,
+  owner         INTEGER NOT NULL,
+  inputs        INTEGER NOT NULL     -- a 64-bit hash of derive's fingerprint of the CL and its meta ref's tip
+) STRICT;
+-- The accounts left out as bots at the last run: a CL is redone when one of its accounts comes or goes.
+CREATE TABLE IF NOT EXISTS reviewers_bots (account_id INTEGER PRIMARY KEY) STRICT;
 """
 
 
@@ -317,7 +323,7 @@ def _walk(db, part, done):
 # What each incremental stage's rows are a function of besides its inputs
 # (cosh/codefp.py). When one changes, the stage's rows are deleted and it
 # reads everything again (walk about 35 min, listing a few minutes); the
-# reviewers stage is rebuilt whole on every run anyway. Bump a version for
+# reviewers stage redoes only the CLs whose inputs moved. Bump a version for
 # a change the fingerprint can't see.
 WALK_VERSION = 1
 LISTING_VERSION = 1
@@ -481,9 +487,19 @@ def linked_accounts(ddb, db):
 
 
 def stage_reviewers(db, ddb=None, linked=None):
-    """Rebuilds cl_reviewers, cl_turns and work_windows. Bots are left out,
-    except accounts in `linked` (default: `linked_accounts`, when `ddb` is
-    the real reviews.sqlite)."""
+    """Brings cl_reviewers, cl_turns and work_windows up to date. Bots are
+    left out, except accounts in `linked` (default: `linked_accounts`, when
+    `ddb` is the real reviews.sqlite).
+
+    Incremental: a CL's rows are redone only when
+      - its inputs changed: derive's fingerprint of it (its listing, meta ref
+        and comments) or the tip of its meta ref walked here (reviewers_done);
+      - a working window its turns used moved (the reviewer's or the owner's
+        in that quarter), or its reviewer had no window and now has one;
+      - an account on it became a bot or stopped being one (reviewers_bots).
+    CLs that left the set (now bot-owned, say) lose their rows. A change to
+    this code (reviewers_fingerprint) or to the walk or listing code
+    rebuilds everything, as does the first run."""
     if ddb is None:
         ddb = reviews_ro()
         if linked is None:
@@ -491,26 +507,144 @@ def stage_reviewers(db, ddb=None, linked=None):
     bots = {r[0] for r in ddb.execute("SELECT account_id FROM accounts WHERE is_bot = 1")} - (linked or set())
     windows = work_hours.Windows(work_hours.activity_counts(db, ddb))
     db.executescript(REVIEWERS_SCHEMA)
-    n_rows, n_cls, n_seen = 0, 0, 0
+    if codefp.check(db, "reviewers", reviewers_fingerprint(), reset_reviewers) == "changed":
+        print("reviewers: the code changed: every CL is redone", flush=True)
+    redo = set()
+    if not db.execute("SELECT 1 FROM reviewers_done LIMIT 1").fetchone():
+        reset_reviewers(db)          # the first run, or a store from before reviewers_done
+        print("reviewers: every CL is done afresh", flush=True)
+    old_windows = {(a, q): s for a, q, s in db.execute("SELECT account_id, quarter, start_h FROM work_windows")}
+    if old_windows:
+        redo = windows_moved(db, windows, old_windows) | bots_changed(db, ddb, bots)
+    n_rows = n_cls = n_seen = n_redone = n_gone = 0
+    after = -1
     for cls in cl_batches(ddb):
+        lo, hi = cls[0][0], cls[-1][0]
         n_seen += len(cls)
-        rows, turns = reviewer_rows(cls, bots, attention_of(db, cls), responses_of(db, ddb, cls), windows)
-        db.executemany("INSERT INTO cl_reviewers VALUES (?,?,?,?,?,?)", rows)
-        db.executemany("INSERT INTO cl_turns VALUES (?,?,?,?,?,?,?)", turns)
-        n_rows += len(rows)
-        n_cls += len({r[0] for r in rows})
-    # After the turns: a reviewer with no activity of their own was looked up, and gets a row.
+        keys = cl_inputs(db, ddb, lo, hi)
+        done = dict(db.execute("SELECT change_number, inputs FROM reviewers_done WHERE change_number > ? "
+                               "AND change_number <= ?", (after, hi)))
+        here = {c[0] for c in cls}
+        gone = done.keys() - here
+        todo = [(n, owner, epoch(c0), epoch(c1) if c1 else None) for n, owner, c0, c1 in cls
+                if n in redo or done.get(n) != keys.get(n, 0)]
+        drop = [(n,) for n in gone | {c[0] for c in todo if c[0] in done}]
+        for t in ("cl_reviewers", "cl_turns", "reviewers_done"):
+            db.executemany(f"DELETE FROM {t} WHERE change_number = ?", drop)
+        if todo:
+            rows, turns = reviewer_rows(todo, bots, attention_of(db, todo), responses_of(db, ddb, todo), windows)
+            db.executemany("INSERT INTO cl_reviewers VALUES (?,?,?,?,?,?)", rows)
+            db.executemany("INSERT INTO cl_turns VALUES (?,?,?,?,?,?,?)", turns)
+            db.executemany("INSERT INTO reviewers_done VALUES (?,?,?)",
+                           [(n, owner, keys.get(n, 0)) for n, owner, _, _ in todo])
+            n_rows += len(rows)
+            n_cls += len({r[0] for r in rows})
+        n_redone += len(todo)
+        n_gone += len(gone)
+        after = hi
+    n_gone += db.execute("SELECT count(*) FROM reviewers_done WHERE change_number > ?", (after,)).fetchone()[0]
+    for t in ("cl_reviewers", "cl_turns", "reviewers_done"):
+        db.execute(f"DELETE FROM {t} WHERE change_number > ?", (after,))
+    # After the turns: a reviewer with no activity of their own was looked up, and gets a row. Windows
+    # looked up by earlier runs keep theirs, brought up to date.
+    db.execute("DELETE FROM work_windows")
+    for a, q in old_windows:
+        windows.start(a, q)
     db.executemany("INSERT INTO work_windows VALUES (?,?,?,?,?)", windows.rows())
+    db.execute("DELETE FROM reviewers_bots")
+    db.executemany("INSERT INTO reviewers_bots VALUES (?)", [(a,) for a in sorted(bots)])
     db.commit()
-    print(f"reviewers: done, {n_rows:,} reviewers of {n_cls:,} CLs (of {n_seen:,})", flush=True)
+    print(f"reviewers: done, {n_redone:,} of {n_seen:,} CLs redone ({n_rows:,} reviewers of {n_cls:,} CLs), "
+          f"{n_gone:,} dropped", flush=True)
+
+
+REVIEWERS_VERSION = 1
+
+
+def reviewers_fingerprint():
+    """The reviewers stage's code, and the walk's and listing's, whose rows it reads."""
+    return codefp.fingerprint(REVIEWERS_VERSION, walk_fingerprint(), listing_fingerprint(), stage_reviewers,
+                              reviewer_rows, work_pair, union_spans, weekday_seconds, cl_batches, cl_inputs,
+                              attention_of, responses_of, windows_moved, quarter_span, bots_changed, TURN_OPEN_AT_CLOSE,
+                              files=["cosh/work_hours.py"])
+
+
+def reset_reviewers(db):
+    for t in ("cl_reviewers", "cl_turns", "work_windows", "reviewers_done", "reviewers_bots"):
+        db.execute(f"DELETE FROM {t}")
+
+
+def cl_inputs(db, ddb, lo, hi):
+    """{CL: a 64-bit hash of what its rows are made from} for change numbers
+    lo..hi: derive's fingerprint (which covers the CL's listing, meta ref and
+    comments) and the tip of the meta ref this store walked (its attention
+    and votes). A hash, not the text: derive's fingerprint is about 200
+    characters, which took 285 MB for 1.2M CLs."""
+    out = {n: fp for n, fp in ddb.execute("SELECT change_number, fingerprint FROM derive_inputs WHERE host = ? "
+                                          "AND change_number BETWEEN ? AND ?", (HOST, lo, hi))}
+    for n, tip in db.execute("SELECT change_number, tip FROM timeline_done WHERE change_number BETWEEN ? AND ?",
+                             (lo, hi)):
+        out[n] = f"{out.get(n, '')} {tip}"
+    return {n: int.from_bytes(hashlib.blake2b(v.encode(), digest_size=8).digest(), "big", signed=True)
+            for n, v in out.items()}
+
+
+def quarter_span(q):
+    """[start, end) of quarter '2026Q3' in unix seconds, UTC."""
+    y, k = int(q[:4]), int(q[5])
+    start = datetime(y, 3 * k - 2, 1, tzinfo=timezone.utc)
+    end = datetime(y + (k == 4), 1 if k == 4 else 3 * k + 1, 1, tzinfo=timezone.utc)
+    return int(start.timestamp()), int(end.timestamp())
+
+
+def windows_moved(db, windows, old):
+    """The CLs whose turns used a working window that has moved since `old`
+    ({(account, quarter): start}, the last run's work_windows), as the
+    reviewer's or the owner's: every window looked up then is in `old`. An
+    account with no window then (no activity at all) and one now moves in
+    every quarter: a reviewer without a window took the owner's."""
+    moved = [(a, *quarter_span(q)) for (a, q), s in old.items() if windows.start(a, q)[0] != s]
+    had = {a for a, _ in old}
+    moved += [(a, 0, 1 << 62) for a in {a for a, _ in windows.counts} - had]
+    if not moved:
+        return set()
+    db.execute("CREATE TEMP TABLE IF NOT EXISTS moved (account_id INTEGER, lo INTEGER, hi INTEGER)")
+    db.execute("DELETE FROM temp.moved")
+    db.executemany("INSERT INTO temp.moved VALUES (?,?,?)", moved)
+    db.execute("CREATE INDEX IF NOT EXISTS temp.moved_account ON moved (account_id)")
+    out = {r[0] for r in db.execute(
+        "SELECT t.change_number FROM cl_turns t JOIN temp.moved m ON m.account_id = t.account_id "
+        "AND t.start_at >= m.lo AND t.start_at < m.hi "
+        "UNION SELECT t.change_number FROM cl_turns t JOIN reviewers_done d USING (change_number) "
+        "JOIN temp.moved m ON m.account_id = d.owner AND t.start_at >= m.lo AND t.start_at < m.hi")}
+    print(f"reviewers: {len(moved):,} working windows moved, used by {len(out):,} CLs", flush=True)
+    return out
+
+
+def bots_changed(db, ddb, bots):
+    """The CLs where an account that became a bot, or stopped being one,
+    since the last run (reviewers_bots) was in the attention set, voted or
+    commented."""
+    flip = bots ^ {r[0] for r in db.execute("SELECT account_id FROM reviewers_bots")}
+    if not flip:
+        return set()
+    marks = ",".join("?" * len(flip))
+    out = set()
+    for d, sql in ((db, f"SELECT change_number FROM attention WHERE account_id IN ({marks})"),
+                   (db, f"SELECT change_number FROM votes WHERE voter IN ({marks})"),
+                   (db, f"SELECT change_number FROM listing_votes WHERE voter IN ({marks})"),
+                   (ddb, f"SELECT change_number FROM comments WHERE account_id IN ({marks})")):
+        out |= {r[0] for r in d.execute(sql, sorted(flip))}
+    print(f"reviewers: {len(flip):,} accounts became or stopped being bots, on {len(out):,} CLs", flush=True)
+    return out
 
 
 REVIEWERS_BATCH = 20_000     # CLs per batch: memory stays flat as history grows
 
 
 def cl_batches(ddb, size=None):
-    """The human-owned chromium/src main CLs, [(change_number, owner, created, closed or None)] in
-    unix seconds, in batches of consecutive change numbers, read by key (keyset paging), so that
+    """The human-owned chromium/src main CLs, [(change_number, owner, created, closed or None)] as
+    reviews.sqlite gives them (text dates), in batches of consecutive change numbers, read by key (keyset paging), so that
     only one batch and its rows are in memory at once."""
     size = size or REVIEWERS_BATCH
     after = -1
@@ -521,7 +655,7 @@ def cl_batches(ddb, size=None):
         if not rows:
             return
         after = rows[-1][0]
-        yield [(n, owner, epoch(c0), epoch(c1) if c1 else None) for n, owner, c0, c1 in rows]
+        yield rows
 
 
 def attention_of(db, cls):

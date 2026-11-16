@@ -75,8 +75,10 @@ it that way:
 - `python3 -m cosh update` skips a step when nothing it reads changed, and
   `scripts/dataflow.py plan` says what a change needs rerun. Use them,
   rather than rebuilding stores by hand, and don't add a step that must
-  rebuild a whole store each week unless it is fast and small (as the
-  `reviewers` stage is, at about a minute).
+  rebuild a whole store each week unless it is fast and small. The
+  `reviewers` stage shows how to key a derived table: it keeps a hash of
+  each CL's inputs (derive's fingerprint and the meta ref's tip) and
+  redoes only CLs whose hash changed or whose working windows moved.
 
 ## Hard rules
 

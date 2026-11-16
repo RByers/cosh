@@ -299,7 +299,10 @@ coarse) and redoes only the parts whose fingerprint changed:
   rerun with `--rebuild` (about 1 h 55 min). docs/commits.md.
 - `review-timeline.sqlite`: the walk and the listing stages each keep one
   in `meta`; a change deletes that stage's rows and it reads everything
-  again (walk about 35 min). `cl_reviewers` is rebuilt every run.
+  again (walk about 35 min). The `reviewers` stage keeps one too
+  (including the walk's and listing's), and per CL a hash of its inputs
+  in `reviewers_done`: it redoes CLs whose hash changed, whose working
+  windows moved or one of whose accounts became or stopped being a bot.
 - `balance-interdiff.sqlite`: one in `meta`; a change deletes every row
   and the stage compares every CL again (about 25 min with 3 shards).
 

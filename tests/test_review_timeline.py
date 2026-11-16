@@ -250,6 +250,9 @@ class ReviewersTest(unittest.TestCase):
                                         (1, 8, '2026-11-04 00:00:00', 1), (1, 99, '2026-11-02 01:00:00', 0);
             ALTER TABLE changes ADD COLUMN host TEXT DEFAULT 'chromium-review.googlesource.com';
             ALTER TABLE comments ADD COLUMN host TEXT DEFAULT 'chromium-review.googlesource.com';
+            CREATE TABLE derive_inputs (host TEXT, change_number INTEGER, fingerprint TEXT);
+            INSERT INTO derive_inputs VALUES ('chromium-review.googlesource.com', 1, 'fp1'),
+                                             ('chromium-review.googlesource.com', 2, 'fp2');
         """)
         db = rt.connect(":memory:")
         mon = ts("2026-11-02 00:00")
@@ -266,6 +269,7 @@ class ReviewersTest(unittest.TestCase):
         whole = [db.execute(f"SELECT * FROM {t} ORDER BY 1, 2, 3").fetchall() for t in tables]
         old, rt.REVIEWERS_BATCH = rt.REVIEWERS_BATCH, 1
         try:
+            db.execute("DELETE FROM reviewers_done")           # done afresh
             with contextlib.redirect_stdout(io.StringIO()):
                 rt.stage_reviewers(db, ddb)
         finally:
@@ -286,6 +290,93 @@ class ReviewersTest(unittest.TestCase):
         with contextlib.redirect_stdout(io.StringIO()):
             rt.stage_reviewers(db, ddb, linked={99})
         self.assertIn((1, 99, None, mon + 3600, None, None), db.execute("SELECT * FROM cl_reviewers").fetchall())
+
+    TABLES = ("cl_reviewers", "cl_turns", "work_windows", "reviewers_done", "reviewers_bots")
+    H = "chromium-review.googlesource.com"
+
+    def fixture(self):
+        """reviews.sqlite and review-timeline.sqlite with three CLs."""
+        ddb = sqlite3.connect(":memory:")
+        ddb.executescript(f"""
+            CREATE TABLE accounts (account_id INTEGER, is_bot INTEGER);
+            CREATE TABLE changes (host TEXT, change_number INTEGER, owner_account INTEGER, created_at TEXT,
+              closed_at TEXT, is_bot_owned INTEGER, project TEXT DEFAULT 'chromium/src', branch TEXT DEFAULT 'main');
+            CREATE TABLE comments (host TEXT, change_number INTEGER, account_id INTEGER, written_at TEXT,
+              after_close INTEGER DEFAULT 0, is_ai INTEGER DEFAULT 0);
+            CREATE TABLE derive_inputs (host TEXT, change_number INTEGER, fingerprint TEXT);
+            INSERT INTO accounts VALUES (7, 0), (8, 0), (99, 0);
+            INSERT INTO changes (host, change_number, owner_account, created_at, closed_at, is_bot_owned) VALUES
+              ('{self.H}', 1, 10, '2026-07-06 00:00:00', '2026-07-09 00:00:00', 0),
+              ('{self.H}', 2, 10, '2026-11-02 00:00:00', '2026-11-05 00:00:00', 0),
+              ('{self.H}', 3, 10, '2026-11-02 00:00:00', '2026-11-05 00:00:00', 0);
+            INSERT INTO comments (host, change_number, account_id, written_at) VALUES
+              ('{self.H}', 1, 7, '2026-07-06 15:00:00'), ('{self.H}', 2, 8, '2026-11-02 16:00:00'),
+              ('{self.H}', 3, 99, '2026-11-02 17:00:00');
+            INSERT INTO derive_inputs VALUES ('{self.H}', 1, 'a'), ('{self.H}', 2, 'a'), ('{self.H}', 3, 'a');
+        """)
+        db = rt.connect(":memory:")
+        jul, nov = ts("2026-07-06 00:00"), ts("2026-11-02 00:00")    # Mondays
+        db.executescript(f"""
+            INSERT INTO timeline_done VALUES (1, 't'), (2, 't'), (3, 't');
+            INSERT INTO uploads VALUES (1, 1, {jul + 14 * 3600}, 10, 'initial', NULL),
+                                       (2, 1, {nov + 14 * 3600}, 10, 'initial', NULL);
+            INSERT INTO attention VALUES (1, 7, {jul + 14 * 3600}, {jul + 18 * 3600}),
+                                         (2, 8, {nov + 3600}, {nov + 86400}), (3, 99, {nov}, {nov + 86400});
+        """)
+        return ddb, db, jul, nov
+
+    def run_stage(self, db, ddb):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            rt.stage_reviewers(db, ddb, linked=set())
+        return out.getvalue()
+
+    def dump(self, db):
+        return [sorted(db.execute(f"SELECT * FROM {t}"), key=repr) for t in self.TABLES]
+
+    def test_incremental_matches_fresh(self):
+        ddb, db, jul, nov = self.fixture()
+        self.run_stage(db, ddb)
+        self.assertIn("redone", self.run_stage(db, ddb))
+        self.assertIn("0 of 3 CLs redone", self.run_stage(db, ddb))
+        # CL 2's meta ref moved: 8 left the attention set earlier.
+        db.execute(f"UPDATE attention SET end_at = {nov + 7200} WHERE change_number = 2 AND account_id = 8")
+        db.execute("UPDATE timeline_done SET tip = 't2' WHERE change_number = 2")
+        # derive re-read CL 2: a comment from 6 too.
+        ddb.execute(f"INSERT INTO comments (host, change_number, account_id, written_at) VALUES "
+                    f"('{self.H}', 2, 6, '2026-11-02 18:00:00')")
+        ddb.execute(f"UPDATE derive_inputs SET fingerprint = 'b' WHERE change_number = 2")
+        # 7 did a lot in July at 22:00 UTC: their window moves (Q3, and Q4's, fitted to history), so CL 1 is
+        # redone though its inputs didn't change. 99 becoming a bot is all that changes for CL 3.
+        db.executemany("INSERT INTO votes VALUES (?, 7, 1, ?, 1)", [(500 + i, jul + 22 * 3600 + i) for i in range(20)])
+        # 99 became a bot; and a new CL arrives.
+        ddb.execute("UPDATE accounts SET is_bot = 1 WHERE account_id = 99")
+        ddb.execute(f"INSERT INTO changes (host, change_number, owner_account, created_at, closed_at, is_bot_owned) "
+                    f"VALUES ('{self.H}', 4, 8, '2026-11-03 00:00:00', '2026-11-04 00:00:00', 0)")
+        db.execute(f"INSERT INTO attention VALUES (4, 7, {nov + 86400}, {nov + 86400 + 3600})")
+        out = self.run_stage(db, ddb)
+        self.assertIn("working windows moved, used by 1 CLs", out)
+        self.assertIn("1 accounts became or stopped being bots, on 1 CLs", out)
+        self.assertIn("4 of 4 CLs redone", out)
+        got = self.dump(db)
+        # CL 2 became bot-owned: its rows go.
+        ddb.execute("UPDATE changes SET is_bot_owned = 1 WHERE change_number = 2")
+        self.assertIn("1 dropped", self.run_stage(db, ddb))
+        got2 = self.dump(db)
+        for t in self.TABLES:
+            db.execute(f"DELETE FROM {t}")
+        self.run_stage(db, ddb)
+        self.assertEqual(got2, self.dump(db))
+        self.assertNotEqual(got, got2)
+        ddb.execute("UPDATE changes SET is_bot_owned = 0 WHERE change_number = 2")
+        for t in self.TABLES:
+            db.execute(f"DELETE FROM {t}")
+        self.run_stage(db, ddb)
+        self.assertEqual(got, self.dump(db))
+        # A change to the code redoes everything.
+        with mock.patch.object(rt, "REVIEWERS_VERSION", 2):
+            self.assertIn("the code changed", self.run_stage(db, ddb))
+        self.assertEqual(got, self.dump(db))
 
 
 if __name__ == "__main__":

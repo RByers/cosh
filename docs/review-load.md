@@ -205,7 +205,9 @@ commits.sqlite, reviews.sqlite, OWNERS in shared/chromium ───────�
   attention hours; and `cl_turns`, each turn that ended before the close
   with its weekday hours and its working hours, the reviewer's and the
   owner's, from each person's working window per quarter in `work_windows`:
-  `docs/review-timezones.md`, "Working hours"; all rebuilt whole). Balance's `cl` stage takes `sent_at` and
+  `docs/review-timezones.md`, "Working hours"; each CL redone only when
+  its inputs, a working window it used or its accounts' bot status changed:
+  `reviewers_done`, `reviewers_bots`). Balance's `cl` stage takes `sent_at` and
   `cl_attention` from `cl_reviewers`. The walk and the listing stages each
   keep a fingerprint of their code in `meta` (`walk_fingerprint`,
   `listing_fingerprint`; `cosh/codefp.py`): when it changes, that stage's
@@ -245,8 +247,8 @@ or ranks people.
   directories they review in, and nothing has been measured about how
   reproducible a reviewer's quarterly figures are.
 - **Weekly update (goal 3).** The timeline step reads only CLs and listings
-  that are new or changed, then rebuilds `cl_reviewers` (about 1.5 min in
-  all when little is new); `review-load` takes 30 s and 1.5 GB. Because
+  that are new or changed, then redoes `cl_reviewers` and `cl_turns` for
+  those CLs and any whose working windows moved (22 s for a week of CLs); `review-load` takes 30 s and 1.5 GB. Because
   only whole quarters are published, past figures don't move and a new
   week changes no file until it completes a quarter.
 - **Repository volume (goal 4).** 7.6 MB in 23,774 files on 2026-11-14

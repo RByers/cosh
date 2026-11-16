@@ -71,13 +71,17 @@ of the day (UTC), 24 numbers per person-quarter, so memory stays small
 - A span's **working hours** are its part inside the window on the
   person's weekdays. Holidays and leave aren't known.
 
-`cosh.review_timeline` (its `reviewers` stage, rebuilt whole) stores the
+`cosh.review_timeline` (its `reviewers` stage) stores the
 windows in `work_windows` and gives each row of `cl_turns` two working-hours
 figures: `work_h`, in the reviewer's window (the turn as the reviewer's
 working time), and `owner_work_h`, in the CL owner's (the wait as the
 author saw it). This page uses `owner_work_h`. The stage reads CLs 20,000
-at a time, by key, and took 64 s and 146 MB on a busy box on 2026-11-15
-(2.1 GB before it streamed); the windows take about 10 s and 70 MB of it.
+at a time, by key, and redoes only CLs whose inputs changed or whose
+turns used a window that moved since the last run (a window looked up
+then is kept in `work_windows`, so its move is seen). On a busy box on
+2026-11-15 a week's worth of CLs took 22 s and 140 MB, and all of them
+110-130 s and 160 MB (2.1 GB before it streamed); the windows take about
+10 s and 70 MB of it.
 
 On the turns of the CLs landed in 2026Q3 (82,209), the median turn was 2.7
 weekday hours (UTC weekends left out, as Review Load counts) but 1.1 of the
