@@ -43,7 +43,7 @@ export interface All {
   reviewed_lines: number[];
   reviewers: number[];
   /** Reviewed commits per quarter: their lines counted once, their reviewers summed, and those with two or more. */
-  reviewers_per_commit: { lines: number[]; reviews: number[]; multi: number[] };
+  reviewers_per_commit: { lines: number[]; reviews: number[]; multi: number[]; every: number[] };
   /** Lines reviewed per reviewer, over the people who reviewed anything in the quarter. */
   reviewer_lines: Spread;
   /** A reviewer's wait: entering the attention set to their first answer, in weekday hours. */
@@ -126,13 +126,15 @@ export const meanLines = (all: Pick<All, 'reviewed_lines' | 'reviewers'>) =>
   all.reviewed_lines.map((v, i) => ratio(v, all.reviewers[i]));
 
 
-/** Reviewers per reviewed commit, per quarter: the mean per commit, the mean per line (each commit
- * weighted by its lines: how many times over `reviewed_lines` counts a line, so the most a split of the
- * files among reviewers can overstate lines reviewed), and the share of commits with two or more. */
+/** Reviewers per reviewed commit, per quarter: the mean per commit; per line, how many reviewers read
+ * each changed line (`reviewed_lines` over the commits' lines: those who read its file, by the split of a
+ * change's files among its reviewers) and, at most, how many would have had every reviewer read every
+ * file (each commit weighted by its lines); and the share of commits with two or more. */
 export function reviewersPerCommit(all: Pick<All, 'reviewed' | 'reviewed_lines' | 'reviewers_per_commit'>) {
   const r = all.reviewers_per_commit;
   return { perCommit: r.reviews.map((v, i) => ratio(v, all.reviewed[i])),
     perLine: all.reviewed_lines.map((v, i) => ratio(v, r.lines[i])),
+    perLineAll: r.every.map((v, i) => ratio(v, r.lines[i])),
     multi: r.multi.map((v, i) => ratio(v, all.reviewed[i])) };
 }
 

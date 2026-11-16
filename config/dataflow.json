@@ -2364,11 +2364,11 @@
       "network": false,
       "lock": "data/private/r2.lock",
       "incremental": "Rewrites all.json; writes each per-reviewer file only if it changed and removes those no longer written. Whole quarters only, so the files change when a quarter completes, not with each week.",
-      "duration": "30 s, 1.5 GB of memory (2026-11-14)",
+      "duration": "82 s, 1.9 GB of memory (2026-11-15)",
       "token_cost": null,
       "cost_source": "docs/review-load.md",
       "refresh": "routine",
-      "notes": "Reads no comment text and no tone. A reviewer's file is named as the Feedback Index's (cosh.review_feedback.file_name: the normalised address).",
+      "notes": "Reads no comment text and no tone. Lines reviewed are split among a change's approvers by OWNERS (each quarter's), approval order and the paths of their comments (docs/review-load.md, \"Who read what\"). A reviewer's file is named as the Feedback Index's (cosh.review_feedback.file_name: the normalised address).",
       "run": "nice -n 5 python3 -m cosh.review_load"
     },
     {

@@ -97,19 +97,20 @@
         <p id="rl-lines-note" class="note"></p>
         <template data-msg="lines-note">
           The changed lines each reviewer reviewed in a quarter, over the people who reviewed anything in it:
-          for every commit not made by a bot, its added and removed lines count once for each reviewer in its
-          Reviewed-by footers. Reverts, large-scale changes and other large mechanical commits are left out. In
+          for every commit not made by a bot, each file's added and removed lines count once for each reviewer
+          in its Reviewed-by footers who read that file. Reverts, large-scale changes and other large mechanical commits are left out. In
           <slot name="last"></slot>, across <slot name="reviewers"></slot> reviewers, the median reviewer
           reviewed <slot name="median"></slot> lines (<slot name="qoq"></slot> on the quarter before and
           <slot name="yoy"></slot> on a year before), the middle half <slot name="p25"></slot> to
           <slot name="p75"></slot> and four in five <slot name="p10"></slot> to <slot name="p90"></slot>. The
           mean was <slot name="mean"></slot> (<slot name="meanYoy"></slot> on a year before), pulled up by the
-          few who review the most. Hover over a quarter for the median's change. Each reviewer is credited with
-          all of a commit's lines: nothing records how reviewers split a change's files between them. Where they
-          do, the lines here are too high, at most by the number of reviewers on the commit: across all reviewed
-          lines, at most <slot name="factor"></slot> times in <slot name="last"></slot> and
-          <slot name="factorFirst"></slot> in <slot name="first"></slot> (see “How this is measured”).<span
-          data-if="you"> Your line is the lines you reviewed.</span>
+          few who review the most. Hover over a quarter for the median's change. Nothing records who read which
+          files of a change with several reviewers, so this is an estimate: a file goes to the first of its
+          owners among them to approve, to anyone who commented in its directory, and to reviewers who own none
+          of the change's files (see “How this is measured”). Counted so, each changed line was read by
+          <slot name="factor"></slot> reviewers on average in <slot name="last"></slot>, against
+          <slot name="every"></slot> had every reviewer read every file.<span data-if="you"> Your line is the
+          lines you reviewed.</span>
         </template>
         <template data-msg="axis-lines">lines reviewed per reviewer</template>
       </section>
@@ -246,7 +247,7 @@
           <slot name="reviewers"></slot> reviewers. Where a few people carry half, others there could take
           more. <strong>Owners who reviewed</strong> counts the people listed in an OWNERS file in the directory
           or below who reviewed anything there: <slot name="active"></slot> of <slot name="listed"></slot>
-          across Chromium; the other <slot name="idle"></slot> approved no commit there in these four quarters.
+          across Chromium; the other <slot name="idle"></slot> reviewed no files there in these four quarters.
           <strong>Reviewed by an owner</strong> is the share of lines whose reviewer owns the file
           (<slot name="owner"></slot> overall); where it is close to all and the waits above are long, the
           directory needs more owners. A change by someone who isn't a committer yet needs approval from two
@@ -283,24 +284,31 @@
         </p>
         <p id="rl-split-note" class="note"></p>
         <template data-msg="split-note">
-          <strong>Reviewers who split a change.</strong> When a change has several reviewers, each often reads
-          only the files they own, but nothing in git or Gerrit records who read which file, so each is credited
-          with every line. The chart below bounds the error. Weighted by lines, it is how many times over the
-          lines reviewed count each changed line, and so the most they can be overstated: if every line had been
-          read by one reviewer only, lines reviewed per reviewer would be that many times too high. It was
-          <slot name="lineFirst"></slot> in <slot name="first"></slot> and <slot name="lineLast"></slot> in
-          <slot name="last"></slot>, between <slot name="lo"></slot> and <slot name="hi"></slot> in every
-          quarter; per commit, <slot name="commitFirst"></slot> and <slot name="commitLast"></slot>
-          reviewers, and <slot name="multiFirst"></slot> and <slot name="multiLast"></slot> of commits had two or
-          more. If reviewers split changes in the same way throughout, the trend in lines reviewed per reviewer
-          since <slot name="first"></slot> is off by no more than the change in this line,
-          <slot name="drift"></slot>.
+          <strong>Who read what.</strong> When a change has several reviewers, each often reads only part of it,
+          but nothing in git or Gerrit records who read which file. Every file needs an owner's approval, so lines
+          reviewed credits a file to the first of its owners among the reviewers to approve (by the OWNERS files
+          at the end of the quarter), to anyone who commented in its directory, and to every reviewer who owns
+          none of the change's files, who most likely read all of it; a file no reviewer owns goes to them all.
+          When the owner of a narrow directory reviews most of a change and a broader owner is added for a few
+          files, the narrow owner usually approves first, so the broader one is credited only with what's left.
+          Rules for single files (<code>per-file</code>) are not read. In <slot name="last"></slot>, the lines
+          reviewed count each changed line <slot name="lineLast"></slot> times (<slot name="lineFirst"></slot>
+          in <slot name="first"></slot>); had every reviewer read every file, <slot name="allLast"></slot>
+          (<slot name="allFirst"></slot>); had each line been read by one reviewer only, once. So lines reviewed
+          per reviewer are at most <slot name="over"></slot> too high and at most <slot name="under"></slot> too
+          low. The estimate moved <slot name="drift"></slot> since <slot name="first"></slot>, so how reviewers
+          share changes barely affects the trend. Per commit there were <slot name="commitFirst"></slot> and
+          <slot name="commitLast"></slot> reviewers, and <slot name="multiFirst"></slot> and
+          <slot name="multiLast"></slot> of commits had two or more. In a sample of 212 approvals that name the
+          part of a change they cover (“third_party/blink LGTM”, 1–3% of approvals), the estimate gave the
+          reviewer exactly those directories in 61%; most of the rest it credited with more than they named.
         </template>
         <ul id="rl-split-legend" class="legend rf-line-legend" aria-label="Lines"></ul>
         <div class="chart rf-half-chart">
-          <canvas id="rl-split" role="img" aria-label="Reviewers per reviewed commit per quarter, weighted by lines and per commit."></canvas>
+          <canvas id="rl-split" role="img" aria-label="Reviewers per changed line per quarter, had every reviewer read every file and as estimated, and reviewers per commit."></canvas>
         </div>
-        <template data-msg="legend-split-line">Reviewers per line reviewed (weighted by lines)</template>
+        <template data-msg="legend-split-all">Reviewers per line, had every reviewer read every file</template>
+        <template data-msg="legend-split-line">Reviewers who read each line (estimate)</template>
         <template data-msg="legend-split-commit">Reviewers per commit</template>
         <template data-msg="axis-split">reviewers</template>
         <p class="note">

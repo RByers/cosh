@@ -178,21 +178,75 @@ def load_commits(gdb, start, end, ids):
 def commit_dir_lines(gdb, ids, detail=()):
     """{commit_id: {3-level directory: lines}} of the commits in `ids`, in
     today's directories, a renamed file counted by the lines changed; and,
-    for the commits in `detail`, {commit_id: {file's directory: lines}}."""
+    for the commits in `detail`, {commit_id: {(file's directory as the
+    commit named it, its directory today): lines}}."""
     current, moved = C.current_paths(gdb), C.moved_lines(gdb)
-    dirs = {pid: C.dir_of(current.get(p, p), 3) for pid, p in gdb.execute("SELECT path_id, path FROM paths")}
-    full = {}
+    dirs, full, same = {}, {}, {}     # `same`: one copy of each directory and pair (1.6M paths, far fewer directories)
+    for pid, p in gdb.execute("SELECT path_id, path FROM paths"):
+        now = current.get(p, p)
+        d3 = C.dir_of(now, 3)
+        dirs[pid] = same.setdefault(d3, d3)
+        pair = (os.path.dirname(p), os.path.dirname(now))
+        full[pid] = same.setdefault(pair, pair)
+    del current, same
     out, files = defaultdict(lambda: defaultdict(int)), defaultdict(lambda: defaultdict(int))
     for cid, pid, ins, dels in gdb.execute("SELECT commit_id, path_id, ins, dels FROM commit_files WHERE commit_id > 0"):
         if cid in ids:
             ins, dels = moved.get((cid, pid), (ins, dels))
             out[cid][dirs[pid]] += max(ins, 0) + max(dels, 0)
             if cid in detail:
-                if pid not in full:
-                    path, = gdb.execute("SELECT path FROM paths WHERE path_id = ?", (pid,)).fetchone()
-                    full[pid] = os.path.dirname(current.get(path, path))
                 files[cid][full[pid]] += max(ins, 0) + max(dels, 0)
     return out, files
+
+
+def dir3(d):
+    """The 3-level directory of a file's directory `d` ("" for the root)."""
+    return C.dir_of(d + "/x" if d else "x", 3)
+
+
+def split_lines(reviewers, files, owns, approved, commented):
+    """Who read which files of a commit with two or more reviewers, since
+    nothing records it (docs/review-load.md, "Who read what"). A file is
+    read by the first of its owners among the reviewers to approve
+    (`owns(person, directory)`, `approved`: {person: time of their first
+    approval}), by every reviewer who owns none of the commit's files, and
+    by anyone who commented in its directory (`commented`: {person:
+    directories}); a file none of them owns, by everyone. `files`:
+    {(directory as the commit named it, key): lines}. Returns {reviewer:
+    {key: lines}}."""
+    owned = {d: [p for p in reviewers if owns(p, d)] for d, _ in files}
+    owners_any = {p for ps in owned.values() for p in ps}
+    plain = {p for p in reviewers if p not in owners_any}
+    order = {p: (approved.get(p, float("inf")), i) for i, p in enumerate(reviewers)}
+    out = {p: defaultdict(int) for p in reviewers}
+    for (d, k), n in files.items():
+        ps = owned[d]
+        rs = ({min(ps, key=order.get)} | plain) if ps else set(reviewers)
+        rs |= {p for p in reviewers if d in commented.get(p, ())}
+        for p in rs:
+            out[p][k] += n
+    return out
+
+
+def first_approvals(tdb, emails, ids, numbers):
+    """{change number: {person: time of their first Code-Review approval}} of the CLs in `numbers`."""
+    out = defaultdict(dict)
+    for table in ("votes", "listing_votes"):
+        for n, acct, at in tdb.execute(f"SELECT change_number, voter, at FROM {table} WHERE value > 0"):
+            if n in numbers and emails.get(acct):
+                p, x = ids.find(emails[acct]), out[n]
+                x[p] = min(at, x.get(p, at))
+    return out
+
+
+def comment_dirs(ddb, emails, ids, numbers):
+    """{change number: {person: directories of the files they commented on before it closed}}."""
+    out = defaultdict(lambda: defaultdict(set))
+    for n, acct, path in ddb.execute("SELECT change_number, account_id, path FROM comments "
+                                     "WHERE after_close = 0 AND path NOT LIKE '/%'"):
+        if n in numbers and emails.get(acct):
+            out[n][ids.find(emails[acct])].add(os.path.dirname(path))
+    return out
 
 
 def committer_since(tdb, emails, ids, reviewed):
@@ -223,13 +277,15 @@ def half_by(lines):
     return n
 
 
-def owner_figures(commits, files, own, ids, since):
+def owner_figures(commits, files, reads, own, ids, since):
     """Who reviewed `commits` (the table's four quarters), against the OWNERS
     files `own`: per directory level and "" for everything,
     [reviewers, how many of them did half the review, people listed in an
     OWNERS file there or below, how many of those reviewed there, lines
     reviewed by an owner of the file, lines of changes by people not yet
-    committers (two approvals needed), those lines that two owners approved]."""
+    committers (two approvals needed), those lines that two owners approved].
+    `files`: {commit: {(directory then, directory today): lines}}; `reads`:
+    {commit: {reviewer: {directory today: lines they read}}} (split_lines)."""
     people = {}
 
     def owns(p, d):
@@ -241,18 +297,19 @@ def owner_figures(commits, files, own, ids, since):
     sums = defaultdict(lambda: [0, 0, 0])             # 3-level directory -> [by an owner, non-committers', two owners]
     for cid, c in commits.items():
         two = len(c["reviewers"]) >= 2 and since.get(c["author"], float("inf")) > c["at"]
-        for d, n in files.get(cid, {}).items():
-            if not n:
-                continue
-            d3 = C.dir_of(d + "/x" if d else "x", 3)
-            owners = [p for p in c["reviewers"] if owns(p, d)]
-            for p in c["reviewers"]:
-                by[d3][p] += n
-            s = sums[d3]
-            s[0] += n * len(owners)
-            if two:
+        for p, ds in reads[cid].items():
+            for d, n in ds.items():
+                if n:
+                    by[dir3(d)][p] += n
+                    sums[dir3(d)][0] += n * owns(p, d)
+        if two:
+            today = defaultdict(int)
+            for (_, d), n in files.get(cid, {}).items():
+                today[d] += n
+            for d, n in today.items():
+                s = sums[dir3(d)]
                 s[1] += n
-                s[2] += n * (len(owners) >= 2)
+                s[2] += n * (sum(owns(p, d) for p in c["reviewers"]) >= 2)
     listed = defaultdict(set)
     for d, (addresses, _, _) in own.direct.items():
         who = {ids.find(e) for e in addresses}
@@ -273,7 +330,8 @@ def owner_figures(commits, files, own, ids, since):
 
 def compute(gdb, ddb, tdb, owners_at=None):
     """`owners_at(sha)` gives the cosh.owners.Owners of that commit's tree;
-    without it the OWNERS figures are left out."""
+    without it the OWNERS figures are left out, and every reviewer of a
+    commit is taken to have read all of it."""
     end = data_end(ddb, gdb)
     last = last_whole_quarter(end)
     qs = quarters(FIRST_QUARTER, last)
@@ -287,7 +345,42 @@ def compute(gdb, ddb, tdb, owners_at=None):
     landed, reviewed = load_commits(gdb, quarter_start(qs[0]), quarter_start(next_quarter(last)), ids)
     print(f"review-load: {qs[0]}..{last}, {len(landed):,} commits, {len(reviewed):,} reviewed", flush=True)
     table_commits = {cid: c for cid, c in reviewed.items() if quarter(c["at"]) in table_qs[1:]} if owners_at else {}
-    dir_lines, file_lines = commit_dir_lines(gdb, reviewed.keys(), table_commits.keys())
+    split = {cid for cid, c in reviewed.items() if len(c["reviewers"]) > 1}
+    dir_lines, file_lines = commit_dir_lines(gdb, reviewed.keys(), split | table_commits.keys())
+    emails = ids.accounts          # with the addresses found for accounts Gerrit shows without one
+    # Who read which files of a commit with two or more reviewers: OWNERS as they stood at the end of
+    # its quarter, the reviewers' approvals and the directories they commented on.
+    numbers = {reviewed[cid]["n"] for cid in split} - {None}
+    approved, commented = first_approvals(tdb, emails, ids, numbers), comment_dirs(ddb, emails, ids, numbers)
+    # One quarter's OWNERS at a time (commits are walked in date order): 37 quarters' at once took 1 GB.
+    cur = dict(q=None, own=None, at=None, memo={})
+
+    def quarter_owners(q):
+        if cur["q"] != q:
+            row = gdb.execute("SELECT sha, landed_at FROM commits WHERE landed_at < ? ORDER BY landed_at DESC, "
+                              "commit_id DESC LIMIT 1", (quarter_start(next_quarter(q)),)).fetchone()
+            cur.update(q=q, own=owners_at(row[0]) if owners_at and row else None, at=row and row[1], memo={})
+        return cur
+
+    def owner_set(q, d):
+        o = quarter_owners(q)
+        if d not in o["memo"]:
+            addresses, anyone = o["own"].of(d) if o["own"] else ((), False)
+            o["memo"][d] = (frozenset(ids.find(e) for e in addresses), anyone)
+        return o["memo"][d]
+
+    def reads(cid, c):
+        """{reviewer: {(directory then, directory today): lines they read}}; each commit is read once, and
+        its files are dropped after unless the OWNERS figures need them."""
+        fl = file_lines.get(cid, {}) if cid in table_commits else file_lines.pop(cid, {})
+        if len(c["reviewers"]) == 1:
+            return {c["reviewers"][0]: fl}
+
+        def owns(p, d):
+            o, anyone = owner_set(c["q"], d)
+            return anyone or p in o
+        return split_lines(c["reviewers"], {(k[0], k): v for k, v in fl.items()}, owns,
+                           approved.get(c["n"], {}), commented.get(c["n"], {}))
 
     n_commits, n_human = [0] * nq, [0] * nq
     for at, human in landed:
@@ -297,12 +390,14 @@ def compute(gdb, ddb, tdb, owners_at=None):
     # Git: lines reviewed, per quarter, person and directory.
     rev_lines, rev_commits = [0] * nq, [0] * nq
     commit_lines, reviews, multi = [0] * nq, [0] * nq, [0] * nq   # reviewed commits' own lines, reviewers, 2+ reviewers
+    every = [0] * nq                                              # lines if every reviewer had read every file
+    table_reads = {}                                              # table commit -> reviewer -> directory today -> lines
     per = defaultdict(lambda: defaultdict(lambda: [0, 0, 0.0, 0, 0.0, 0]))   # person -> quarter -> figures
     people_q = [set() for _ in qs]
     dirs = defaultdict(lambda: [0] * len(table_qs))           # 3-level directory -> lines per table quarter
     pdirs = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))  # quarter -> person -> directory -> lines
     by_cl = {}
-    for cid, c in reviewed.items():
+    for cid, c in sorted(reviewed.items(), key=lambda x: (x[1]["at"], x[0])):
         q = quarter(c["at"])
         i = qi[q]
         dl = dir_lines.get(cid, {})
@@ -314,14 +409,27 @@ def compute(gdb, ddb, tdb, owners_at=None):
         commit_lines[i] += lines
         reviews[i] += len(c["reviewers"])
         multi[i] += len(c["reviewers"]) > 1
+        every[i] += lines * len(c["reviewers"])
+        r = reads(cid, c) if cid in split or cid in table_commits else None
+        if cid in split:
+            got = {}
+            for p, fl in r.items():
+                g = got[p] = defaultdict(int)
+                for (_, d), v in fl.items():
+                    g[dir3(d)] += v
+        else:
+            got = {c["reviewers"][0]: dl}
+        if cid in table_commits:
+            table_reads[cid] = {p: {d: v for (_, d), v in fl.items()} for p, fl in r.items()}
         for p in c["reviewers"]:
-            rev_lines[i] += lines
+            mine = got.get(p, {})
+            rev_lines[i] += sum(mine.values())
             people_q[i].add(p)
             x = per[p][q]
             x[0] += 1
-            x[1] += lines
+            x[1] += sum(mine.values())
             if q in ti:
-                for d, n in dl.items():
+                for d, n in mine.items():
                     if n:
                         dirs[d][ti[q]] += n
                         if q != table_qs[0]:
@@ -336,7 +444,6 @@ def compute(gdb, ddb, tdb, owners_at=None):
     parents = {dir_levels(d)[-2] for d in listed if len(dir_levels(d)) > 1} & listed
     rows_of = functools.lru_cache(maxsize=None)(lambda d: table_rows(d, listed, parents))
     # Gerrit: the same commits' CLs.
-    emails = ids.accounts          # with the addresses found for accounts Gerrit shows without one
     merged = {n for (n,) in ddb.execute(
         "SELECT change_number FROM changes WHERE is_bot_owned = 0 AND status = 'MERGED'") if n in by_cl}
     reply_h = [[] for _ in qs]
@@ -386,9 +493,10 @@ def compute(gdb, ddb, tdb, owners_at=None):
     # OWNERS as they stood at the last quarter's last commit, so the figures move only with a new quarter.
     own, own_at = {}, None
     if owners_at:
-        sha, own_at = gdb.execute("SELECT sha, landed_at FROM commits WHERE landed_at < ? ORDER BY landed_at DESC, "
-                                  "commit_id DESC LIMIT 1", (quarter_start(next_quarter(last)),)).fetchone()
-        own = owner_figures(table_commits, file_lines, owners_at(sha), ids, committer_since(tdb, emails, ids, reviewed))
+        o = quarter_owners(last)
+        latest, own_at = o["own"], o["at"]
+        own = owner_figures(table_commits, file_lines, table_reads, latest, ids,
+                            committer_since(tdb, emails, ids, reviewed))
     y, n = int(last[:4]), int(last[-1])
     data = dict(
         # cosh.data_span: Gerrit's first week to the end of the last whole quarter
@@ -396,8 +504,9 @@ def compute(gdb, ddb, tdb, owners_at=None):
         quarters=qs, attention_from=ATTENTION_FROM, min_dir_lines=MIN_DIR_LINES,
         commits=n_commits, human=n_human,
         reviewed=rev_commits, reviewed_lines=rev_lines, reviewers=[len(s) for s in people_q],
-        # Reviewers per reviewed commit: its lines once, its reviewers, and the commits with two or more.
-        reviewers_per_commit=dict(lines=commit_lines, reviews=reviews, multi=multi),
+        # Reviewers per reviewed commit: its lines once, its reviewers, the commits with two or more, and
+        # the lines reviewed had every reviewer read every file (reviewed_lines splits them: split_lines).
+        reviewers_per_commit=dict(lines=commit_lines, reviews=reviews, multi=multi, every=every),
         # Lines reviewed per reviewer: the spread over the people who reviewed anything in the quarter.
         reviewer_lines=spread([[byq[q][1] for byq in per.values() if q in byq and byq[q][0]] for q in qs]),
         # A reviewer's turn to first answer and every turn's hours: their spread per quarter.
@@ -495,5 +604,5 @@ def main(argv=None):
 
 if __name__ == "__main__":
     from cosh import memcap
-    memcap.join()   # about 1.6 GB: take turns in the shared cap (AGENTS.md)
+    memcap.join()   # about 1.9 GB: take turns in the shared cap (AGENTS.md)
     main()

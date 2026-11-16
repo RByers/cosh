@@ -79,18 +79,10 @@ quarters, shaded against everyone's there).
   everyone asked, approver or not, since being asked is load.
 - **Lines reviewed**: a reviewed commit's insertions plus deletions (a
   renamed file by the lines changed in it, a binary file 0), once for each
-  such reviewer. A commit with two reviewers counts twice: the measure is
+  such reviewer who read the file (see "Who read what"). A commit whose two
+  reviewers both read a file counts its lines twice: the measure is
   review work. Reviewers who commented without approving are not in
-  `Reviewed-by` and don't count here (see **Approver**). Each reviewer is credited with all
-  of the commit's lines: nothing records how reviewers split a change's
-  files. The page bounds the error with a chart in "How this is measured":
-  reviewers per reviewed commit, weighted by lines (`reviewed_lines` over
-  the commits' own lines), which is the most the lines can be overstated
-  (if every line were read by one reviewer only). On 2026-11-15 it was
-  1.74 in 2017Q3 and 1.59 in 2026Q3, between 1.44 and 1.90 in every
-  quarter (1.48 and 1.38 reviewers per commit; 33% and 30% of commits had
-  two or more), so with the same splitting habits throughout, the trend
-  since 2017 is off by at most 9%.
+  `Reviewed-by` and don't count here (see **Approver**).
 - **Reviewer** (Gerrit figures): a human account other than the CL's owner.
   The CLs are those of the reviewed commits, in the quarter they landed.
 - **Answer**: a Code-Review vote (not a removal) or a comment before the
@@ -140,6 +132,55 @@ quarters, shaded against everyone's there).
   address of a reviewer gets a `{"see": <name>}` file, so typing any of
   them finds them.
 
+## Who read what
+
+Nothing in git or Gerrit records which files of a change each of its
+reviewers read, and crediting every reviewer with every line overstates
+lines reviewed wherever reviewers share a change. Chromium needs an owner's
+approval for every file, so `split_lines` (`cosh/review_load.py`) guesses
+for each file of a commit with two or more approvers:
+
+- The **first of the file's owners among the approvers to approve** reads
+  it (OWNERS at the last commit of the commit's quarter, by the file's path
+  in that commit; first Code-Review vote above 0 in the timeline's `votes`
+  and `listing_votes`; with no vote found, the first approver listed). A
+  common pattern: the owner of a narrow directory reviews most of a change
+  and a broader owner is added for a few more files. The narrow owner
+  approves first and is credited with everything they own; the broader one
+  only with the files nobody before them could approve.
+- **Approvers who own none of the commit's files** read all of it: a
+  teammate's review before an owner's stamp.
+- **Anyone who commented** on a file in that directory before the CL
+  closed read it (`reviews.sqlite` `comments`, file comments only).
+- A file **no approver owns** is read by all of them.
+
+`per-file` rules are not read, so an owner by `per-file` alone counts as no
+owner. `reviewers_per_commit.every` keeps the lines had every reviewer read
+every file, the upper bound; the lower bound is each line read once.
+
+Measured on 2026-11-15: each changed line was read by 1.36 reviewers in
+2017Q3 and 1.28 in 2026Q3 (between 1.19 and 1.50 in every quarter),
+against 1.74 and 1.59 had every reviewer read every file (1.44 to 1.90);
+1.48 and 1.38 reviewers per commit, 33% and 30% of commits with two or
+more. Lines reviewed per reviewer in 2026Q3 came to a median of 2,034
+(2,668 crediting every line to everyone), a 90th percentile of 18,103
+(23,166) and a mean of 6,446 (7,988). So per reviewer the figures are at
+most 28% too high (had each line been read once) and 24% too low (had
+everyone read everything), and the estimate moved 6% from 2017Q3 to
+2026Q3, against 9% for the upper bound: how reviewers share changes
+barely moves the trend.
+
+Approvals that name what they cover ("third_party/blink LGTM", "//content
+lgtm") could replace the guess where they exist, but they are rare: in
+1,500 sampled commits with two or more approvers from each of 2018Q3,
+2022Q3 and 2026Q3, 3%, 2% and 1% of approvals named a directory of the
+commit (by regex over the vote's message and the reviewer's patch-set
+comments within a minute of it; scratch script, 2026-11-15). As a check on
+the guess: of those 212 approvals, the guess credited the reviewer with
+exactly the named directories in 129 (61%), with more in 40, fewer in 23,
+nothing in 11 and a different set in 9. So the page doesn't read approval
+text.
+
 ## OWNERS and second approvals
 
 The second table, "Who could share the load", covers the same four
@@ -178,9 +219,10 @@ any committer could.
   owners of the file approved. The second of those approvals didn't have to
   come from an owner.
 
-On 2026-11-14, for 2025Q4 .. 2026Q3: 1,556 reviewers, 122 of whom did half
-the review; 1,126 of 1,386 listed owners reviewed something; 66% of lines
-were reviewed by an owner of the file; non-committers' changes came to 1.41M
+On 2026-11-15, for 2025Q4 .. 2026Q3: 1,550 reviewers, 122 of whom did half
+the review; 1,123 of 1,386 listed owners reviewed something; 72% of lines
+were reviewed by an owner of the file (66% before lines were split among
+a change's reviewers, "Who read what"); non-committers' changes came to 1.41M
 lines, 48% of them approved by two owners.
 
 Nothing here is per person: no file names an owner or says what one did.
@@ -223,7 +265,7 @@ R2 bucket (`docs/r2.md`; until 2026-11-14 they were committed next to
 
 | File | Holds |
 |---|---|
-| `all.json` | per quarter: commits, reviewed commits and lines, reviewers, `reviewers_per_commit` (the reviewed commits' own lines, their reviewers summed, and those with two or more), `reviewer_lines` (lines reviewed per reviewer), `reply` (the reviewer's turn to first answer) and `turns` (reviewer response time), each a spread: 10th, 25th, 50th, 75th, 90th percentile, mean and count; the table's directories at every level with five quarters of lines, four of the 50th/75th/90th percentile and turns, and the percentiles over the four; `others`: the same for each directory's "Other"; with OWNERS, each directory's seven figures (reviewers, how many did half, owners listed, owners who reviewed, lines reviewed by an owner, non-committers' lines, those two owners approved) and `owners`: the same for everything and the day of the OWNERS files |
+| `all.json` | per quarter: commits, reviewed commits and lines, reviewers, `reviewers_per_commit` (the reviewed commits' own lines, their reviewers summed, those with two or more, and `every`: the lines reviewed had every reviewer read every file), `reviewer_lines` (lines reviewed per reviewer), `reply` (the reviewer's turn to first answer) and `turns` (reviewer response time), each a spread: 10th, 25th, 50th, 75th, 90th percentile, mean and count; the table's directories at every level with five quarters of lines, four of the 50th/75th/90th percentile and turns, and the percentiles over the four; `others`: the same for each directory's "Other"; with OWNERS, each directory's seven figures (reviewers, how many did half, owners listed, owners who reviewed, lines reviewed by an owner, non-committers' lines, those two owners approved) and `owners`: the same for everything and the day of the OWNERS files |
 | `<name>.json` | one reviewer, in one file (version 2), fetched in one request: `years`, by year, `{"q": {quarter number: [commits reviewed, lines reviewed, attention weekday hours, CLs counted in them, asked-to-answer hours (summed), answers]}}`; `dirs`, by quarter (the table's four), their 3-level directories `[directory, lines]` (until 2026-11-15 also attention hours and CLs); `turns`, by quarter, `[median hours, turns]`; and `rows`, by table row (`d:<dir>`, `o:<dir>` for its "Other", `o:` for what no listed directory covers), their turns over the four quarters `[50th, 75th, 90th percentile, turns]` |
 
 `<name>` is the address as typed, lower case, as the Feedback Index names its files
@@ -248,7 +290,9 @@ or ranks people.
   reproducible a reviewer's quarterly figures are.
 - **Weekly update (goal 3).** The timeline step reads only CLs and listings
   that are new or changed, then redoes `cl_reviewers` and `cl_turns` for
-  those CLs and any whose working windows moved (22 s for a week of CLs); `review-load` takes 30 s and 1.5 GB. Because
+  those CLs and any whose working windows moved (22 s for a week of CLs); `review-load` takes 82 s and
+  1.9 GB (2026-11-15), about half of it reading 37 quarters' OWNERS files (one quarter's at a time)
+  and the files of every commit with two or more approvers for the split among them. Because
   only whole quarters are published, past figures don't move and a new
   week changes no file until it completes a quarter.
 - **Repository volume (goal 4).** 7.6 MB in 23,774 files on 2026-11-14

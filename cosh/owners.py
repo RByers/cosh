@@ -29,7 +29,7 @@ def read(repo, rev):
         rest = b""
         for chunk in iter(lambda: p.stdout.read(1 << 20), b""):
             *done, rest = (rest + chunk).split(b"\0")
-            names += [n for n in (x.decode("utf-8", "replace") for x in done) if NAME.search(n)]
+            names += [n for n in (x.decode("utf-8", "replace") for x in done if b"OWNERS" in x) if NAME.search(n)]
     if p.returncode:
         raise subprocess.CalledProcessError(p.returncode, p.args)
     out = subprocess.run(["git", "--git-dir", repo, "cat-file", "--batch"], stdout=subprocess.PIPE, env=C.ENV, check=True,

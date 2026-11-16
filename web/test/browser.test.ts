@@ -3999,7 +3999,8 @@ const loadAll = {
   quarters: ['2025Q3', '2025Q4', '2026Q1', '2026Q2', '2026Q3'], attention_from: '2025Q4', min_dir_lines: 100,
   commits: [100, 110, 120, 130, 150], human: [80, 85, 90, 95, 120], reviewed: [70, 75, 80, 85, 100],
   reviewed_lines: [7000, 8000, 9000, 9000, 12000], reviewers: [10, 10, 10, 9, 10],
-  reviewers_per_commit: { lines: [4000, 4400, 5000, 5000, 7000], reviews: [105, 112, 120, 128, 150], multi: [35, 37, 40, 42, 50] },
+  reviewers_per_commit: { lines: [4000, 4400, 5000, 5000, 7000], reviews: [105, 112, 120, 128, 150], multi: [35, 37, 40, 42, 50],
+    every: [8000, 9000, 10000, 10000, 14000] },
   reviewer_lines: { p10: [10, 10, 10, 10, 20], p25: [50, 60, 70, 80, 100], p50: [200, 250, 300, 300, 360],
     p75: [600, 700, 800, 800, 900], p90: [2000, 2200, 2400, 2500, 3000], mean: [700, 800, 900, 1000, 1200], n: [10, 10, 10, 9, 10] },
   reply: { p10: [null, 0.1, 0.1, 0.2, 0.2], p25: [null, 1, 1, 1, 1.5], p50: [null, 3, 3, 4, 4], p75: [null, 15, 14, 16, 17],
@@ -4072,11 +4073,11 @@ test('review load: four charts over the quarters and a directory table that open
   assert.deepEqual(await page.evaluate(() => window.__rl!.charts.lines.data.datasets[4].data), [200, 250, 300, 300, 360]);
   const norm = (sel: string) => page.$eval(sel, (e) => e.textContent!.replace(/\s+/g, ' '));
   assert.match(await norm('#rl-lines-note'), /across 10 reviewers, the median reviewer reviewed 360 lines \(\+20% on the quarter before and \+80% on a year before\), the middle half 100 to 900 and four in five 20 to 3,000\. The mean was 1,200 \(\+71% on a year before\)/);
-  // Splitting a commit's files among its reviewers: at most the lines-weighted reviewers per commit.
-  assert.match(await norm('#rl-lines-note'), /at most 1\.71 times in Q3 2026 and 1\.75 in Q3 2025/);
-  assert.match(await norm('#rl-split-note'), /It was 1\.75 in Q3 2025 and 1\.71 in Q3 2026, between 1\.71 and 1\.82 in every quarter; per commit, 1\.5 and 1\.5 reviewers, and 50% and 50% of commits had two or more\..* off by no more than the change in this line, 2%\./);
+  // Who read which files: 12,000 lines read of 7,000 changed, against 14,000 had every reviewer read all.
+  assert.match(await norm('#rl-lines-note'), /each changed line was read by 1\.71 reviewers on average in Q3 2026, against 2 had every reviewer read every file\./);
+  assert.match(await norm('#rl-split-note'), /In Q3 2026, the lines reviewed count each changed line 1\.71 times \(1\.75 in Q3 2025\); had every reviewer read every file, 2 \(2\); had each line been read by one reviewer only, once\. So lines reviewed per reviewer are at most 71% too high and at most 17% too low\. The estimate moved −2% since Q3 2025, .* Per commit there were 1\.5 and 1\.5 reviewers, and 50% and 50% of commits had two or more\./);
   assert.deepEqual(await page.evaluate(() => window.__rl!.charts.split.data.datasets.map((d) => d.label)),
-    ['Reviewers per line reviewed (weighted by lines)', 'Reviewers per commit']);
+    ['Reviewers per line, had every reviewer read every file', 'Reviewers who read each line (estimate)', 'Reviewers per commit']);
   assert.match(await norm('#rl-reply-note'), /over 90 first answers, the median was 4 h, the middle half 1\.5 h to 17 h and four in five 0\.2 h to 45 h; the mean was 18 h/);
   assert.match(await page.$eval('#rl-turns-note', (e) => e.textContent!.replace(/\s+/g, ' ')),
     /over 100 turns on changes landed in the quarter, the median turn lasted 6 h, the middle half 3 h to 14 h and four in five 1 h to 40 h; the mean was 16 h/);

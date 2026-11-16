@@ -73,6 +73,7 @@ class ComputeTest(unittest.TestCase):
             CREATE TABLE changes (host TEXT DEFAULT 'chromium-review.googlesource.com', change_number INTEGER,
                                   created_at TEXT, updated_at TEXT, is_bot_owned INTEGER, status TEXT, owner_account INTEGER DEFAULT 6,
                                   project TEXT DEFAULT 'chromium/src', branch TEXT DEFAULT 'main');
+            CREATE TABLE comments (change_number INTEGER, account_id INTEGER, path TEXT, after_close INTEGER);
             INSERT INTO meta VALUES ('fetched_weeks', '["2026-W18", "2026-W44"]');
             INSERT INTO accounts (account_id, email) VALUES (6, 'author@chromium.org'), (7, 'rev@chromium.org'),
                                                             (8, 'two@x.org'), (9, NULL);
@@ -112,7 +113,8 @@ class ComputeTest(unittest.TestCase):
         self.assertEqual(data["reviewed_lines"], [40, 160])
         self.assertEqual(data["reviewers"], [1, 2])
         # Q3's commit has two reviewers: its 80 lines count twice in reviewed_lines.
-        self.assertEqual(data["reviewers_per_commit"], dict(lines=[40, 80], reviews=[1, 2], multi=[0, 1]))
+        # Without OWNERS, every reviewer is taken to have read every file.
+        self.assertEqual(data["reviewers_per_commit"], dict(lines=[40, 80], reviews=[1, 2], multi=[0, 1], every=[40, 160]))
         self.assertNotIn("first", data)
         # Asked Friday 13:00, answered Monday 12:00: 23 weekday hours. Nothing before the attention set.
         self.assertEqual(data["reply"], dict(p10=[None, 23.0], p25=[None, 23.0], p50=[None, 23.0], p75=[None, 23.0],
@@ -158,12 +160,21 @@ class ComputeTest(unittest.TestCase):
         self.assertEqual(own.of("a/b"), ({"root@x.org", "rev@google.com", "idle@x.org"}, False))
         self.assertEqual(own.of("a/b/c"), ({"two@x.org"}, False))
         self.assertEqual(own.of("gone/dir"), ({"root@x.org"}, False))
+        # rev commented on commit 2's a/b/c/x.cc; comments after the close or on the change as a whole don't
+        # count as reading a file.
+        self.ddb.executemany("INSERT INTO comments VALUES (?,?,?,?)", [
+            (102, 7, "a/b/c/x.cc", 0), (111, 7, "a/b/c/x.cc", 1), (111, 7, "/PATCHSET_LEVEL", 0)])
         data, *_ = L.compute(self.gdb, self.ddb, self.tdb, lambda sha: seen.append(sha) or own)
-        self.assertEqual(seen, ["sha11"])                 # the last quarter's last commit
+        # Each quarter's last commit, for quarters with a commit to split: Q2's has one reviewer.
+        self.assertEqual(seen, ["sha11"])
         self.assertEqual(data["owners"]["at"], "2026-08-04")
         # Q3: commit 2 (rev, two: 60 lines in a/b/c, 20 in a/b) and commit 11 (rev, two: 10 and 10).
-        # a/b/c is two's alone, a/b is rev's. author@ has voted nowhere but landed commit 1 with one
-        # reviewer, so only new@x.org's commit needed two approvals, and no file had two owners.
+        # a/b/c is two's alone, a/b is rev's: each reads their own, and rev a/b/c of commit 2 too, having
+        # commented there. Every reviewer reading everything would give 160 + 40.
+        self.assertEqual(data["reviewed_lines"], [40, 160])
+        self.assertEqual(data["reviewers_per_commit"]["every"], [40, 200])
+        # author@ has voted nowhere but landed commit 1 with one reviewer, so only new@x.org's commit
+        # needed two approvals, and no file had two owners.
         figures = {d[0]: d[5] for d in data["dirs"]}
         self.assertEqual(figures["a/b/c/"], [2, 1, 2, 1, 70, 10, 0])
         self.assertEqual(figures["a/b/"], [2, 1, 2, 1, 100, 20, 0])
@@ -172,6 +183,26 @@ class ComputeTest(unittest.TestCase):
         self.assertEqual(L.half_by([5, 1, 1, 1]), 1)
         self.assertEqual(L.half_by([2, 2, 2, 2]), 2)
         self.assertEqual(L.half_by([]), 0)
+
+    def test_split(self):
+        # Two owners of a/: narrow@ owns a/n too, broad@ only through a/. narrow@ approved first, so
+        # broad@, added for a/w, reads only what narrow@ couldn't approve; plain@ owns nothing here and
+        # reads everything; z/ is nobody's, so everyone reads it; broad@ commented in a/n.
+        own = {"a": {"narrow", "broad"}, "a/n": {"narrow"}, "a/w": {"broad"}, "z": set()}
+        files = {("a/n", "n"): 50, ("a/w", "w"): 5, ("a", "a"): 10, ("z", "z"): 1}
+        R = ["broad", "narrow", "plain"]
+        got = L.split_lines(R, files, lambda p, d: p in own[d], {"narrow": 1, "broad": 2, "plain": 0}, {})
+        self.assertEqual({p: dict(v) for p, v in got.items()}, {
+            "narrow": {"n": 50, "a": 10, "z": 1}, "broad": {"w": 5, "z": 1},
+            "plain": {"n": 50, "w": 5, "a": 10, "z": 1}})
+        # broad@ approving first reads all of a/ but a/n; a comment in a/n adds it.
+        got = L.split_lines(R, files, lambda p, d: p in own[d], {"narrow": 3, "broad": 2}, {"broad": {"a/n"}})
+        self.assertEqual({p: dict(v) for p, v in got.items()}, {
+            "narrow": {"n": 50, "z": 1}, "broad": {"n": 50, "w": 5, "a": 10, "z": 1},
+            "plain": {"n": 50, "w": 5, "a": 10, "z": 1}})
+        # No approval found: the first reviewer listed is taken.
+        got = L.split_lines(["narrow", "broad"], {("a", "a"): 10}, lambda p, d: p in own[d], {}, {})
+        self.assertEqual({p: dict(v) for p, v in got.items()}, {"narrow": {"a": 10}, "broad": {}})
 
     def test_files(self):
         data, people, pdirs, aliases, prows = L.compute(self.gdb, self.ddb, self.tdb)

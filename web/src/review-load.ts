@@ -227,33 +227,36 @@ function renderLines() {
   };
   draw('lines', datasets, t, { y: { ...axis(t, msg('axis-lines')), beginAtZero: true } }, (v) => fmtInt(Math.round(v)), growth);
   const lines = (v: number | null | undefined) => fmtInt(Math.round(v ?? 0));
-  const split = reviewersPerCommit(all).perLine;
+  const split = reviewersPerCommit(all);
   put($('#rl-lines-note'), 'lines-note', { last: q, reviewers: fmtInt(all.reviewers[i]), median: lines(s.p50[i]),
-    factor: fmtNum(split[i] ?? 0, { maximumFractionDigits: 2 }), factorFirst: fmtNum(split[0] ?? 0, { maximumFractionDigits: 2 }),
-    first: quarterLabel(all.quarters[0]),
+    factor: fmtNum(split.perLine[i] ?? 0, { maximumFractionDigits: 2 }),
+    every: fmtNum(split.perLineAll[i] ?? 0, { maximumFractionDigits: 2 }),
     p25: lines(s.p25[i]), p75: lines(s.p75[i]), p10: lines(s.p10[i]), p90: lines(s.p90[i]),
     qoq: fmtChange(change(s.p50[i], s.p50[i - 1])), yoy: fmtChange(change(s.p50[i], s.p50[i - 4])),
     mean: lines(mean[i]), meanYoy: fmtChange(change(mean[i], mean[i - 4])), you: !!p });
 }
 
-/** Methodology: reviewers per reviewed commit, the bound on how much splitting files overstates lines. */
+/** Methodology: reviewers per changed line, as estimated and had every reviewer read every file (the
+ * bounds on lines reviewed), and reviewers per commit. */
 function renderSplit() {
   const all = state.all!;
   const t = theme();
   const { i, q } = lastOf(all);
   const r = reviewersPerCommit(all);
-  const keys: Key[] = [{ label: msg('legend-split-line'), color: t.series[0] }, { label: msg('legend-split-commit'), color: t.series[2] }];
+  const keys: Key[] = [{ label: msg('legend-split-all'), color: t.series[1] }, { label: msg('legend-split-line'), color: t.series[0] },
+    { label: msg('legend-split-commit'), color: t.series[2] }];
   legend($('#rl-split-legend'), keys);
-  draw('split', [line(keys[0].label, r.perLine, keys[0].color), line(keys[1].label, r.perCommit, keys[1].color)], t,
-    { y: { ...axis(t, msg('axis-split')), min: 1 } }, (v) => fmtNum(v, { maximumFractionDigits: 2 }));
+  draw('split', [line(keys[0].label, r.perLineAll, keys[0].color), line(keys[1].label, r.perLine, keys[1].color),
+    line(keys[2].label, r.perCommit, keys[2].color)], t,
+  { y: { ...axis(t, msg('axis-split')), min: 1 } }, (v) => fmtNum(v, { maximumFractionDigits: 2 }));
   const f = (v: number | null | undefined) => fmtNum(v ?? 0, { maximumFractionDigits: 2 });
   const pct = (v: number | null | undefined) => fmtNum(v ?? 0, { style: 'percent', maximumFractionDigits: 0 });
-  const line0 = r.perLine[0];
-  const lines = r.perLine.filter(ok);
+  const est = r.perLine[i] ?? 1;
   put($('#rl-split-note'), 'split-note', { first: quarterLabel(all.quarters[0]), last: q,
-    lineFirst: f(line0), lineLast: f(r.perLine[i]), lo: f(Math.min(...lines)), hi: f(Math.max(...lines)),
+    lineFirst: f(r.perLine[0]), lineLast: f(est), allFirst: f(r.perLineAll[0]), allLast: f(r.perLineAll[i]),
+    over: pct(est - 1), under: pct((r.perLineAll[i] ?? est) / est - 1),
     commitFirst: f(r.perCommit[0]), commitLast: f(r.perCommit[i]), multiFirst: pct(r.multi[0]), multiLast: pct(r.multi[i]),
-    drift: pct(Math.abs(change(r.perLine[i], line0) ?? 0)) });
+    drift: fmtChange(change(est, r.perLine[0])) });
 }
 
 function renderReply() {
