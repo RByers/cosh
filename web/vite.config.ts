@@ -56,7 +56,7 @@ export const CSP = [
   "default-src 'none'",
   "script-src 'self'",
   "style-src 'self'",
-  // The favicons are data: URLs.
+  // The SVG favicon is a data: URL; favicon.ico and apple-touch-icon.png are 'self'.
   "img-src 'self' data:",
   // Per-person files and the comment download's threads, from the R2 bucket (config/r2.json).
   "connect-src 'self' https://cosh-data.rbyers.ca",
